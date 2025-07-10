@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Task Manager</title>
+    <!-- Tailwind CSS CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+        /* Custom animation for message display */
+        @keyframes fade-in-down {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .animate-fade-in-down {
+            animation: fade-in-down 0.5s ease-out forwards;
+        }
+        /* Ensure font-inter is applied */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 font-inter">
+
+    <!-- Main container with responsive padding and max width -->
+    <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-2xl p-6 md:p-8 lg:p-10">
+        <h1 class="text-4xl font-bold text-center text-indigo-700 mb-8">
+            My Task Manager
+        </h1>
+
+        <!-- Message display area -->
+        <div id="message-area" class="hidden bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded-md relative mb-6 text-center shadow-md animate-fade-in-down">
+            <!-- Message will be inserted here by JavaScript -->
+        </div>
+
+        <!-- Content area for task list or task details -->
+        <div id="app-content">
+            <!-- Content will be dynamically loaded here by JavaScript -->
+        </div>
+    </div>
+
+    <script>
+        // Global state variables
+        // Initial tasks array populated with the provided AWS services
+        let tasks = [
+            { id: 1, description: 'Amazon EC2', screenshots: [] },
+            { id: 2, description: 'Amazon VPC', screenshots: [] },
+            { id: 3, description: 'AWS Lambda', screenshots: [] },
+            { id: 4, description: 'Amazon S3', screenshots: [] },
+            { id: 5, description: 'Amazon EBS', screenshots: [] },
+            { id: 6, description: 'Amazon RDS', screenshots: [] },
+            { id: 7, description: 'Amazon Athena', screenshots: [] },
+            { id: 8, description: 'Amazon CloudWatch', screenshots: [] },
+            { id: 9, description: 'AWS CloudTrail', screenshots: [] },
+            { id: 10, description: 'AWS CloudFormation', screenshots: [] },
+            { id: 11, description: 'AWS CDK', screenshots: [] }
+        ];
+        let newTaskDescription = '';
+        let selectedTask = null; // Holds the task currently being viewed in detail
+        let selectedFiles = []; // Holds files selected for "upload"
+        let message = ''; // Holds messages to display to the user
+
+        // DOM elements
+        const messageArea = document.getElementById('message-area');
+        const appContent = document.getElementById('app-content');
+
+        // Function to display messages to the user
+        function showMessage(msg, duration = 3000) {
+            message = msg;
+            messageArea.textContent = message;
+            messageArea.classList.remove('hidden');
+            messageArea.classList.add('animate-fade-in-down');
+            setTimeout(() => {
+                messageArea.classList.add('hidden');
+                messageArea.classList.remove('animate-fade-in-down');
+                message = '';
+            }, duration);
+        }
+
+        // Function to render the main task list view
+        function renderTaskList() {
+            appContent.innerHTML = `
+                <div class="space-y-8">
+                    <!-- Add New Task Section -->
+                    <div class="bg-gray-50 p-6 rounded-xl shadow-lg border border-gray-200">
+                        <h2 class="text-2xl font-semibold text-gray-800 mb-4">Add a New Task</h2>
+                        <div class="flex flex-col md:flex-row gap-4">
+                            <textarea
+                                id="new-task-description"
+                                placeholder="Describe your task here..."
+                                rows="3"
+                                class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-y"
+                                aria-label="New task description"
+                            >${newTaskDescription}</textarea>
+                            <button
+                                id="add-task-button"
+                                class="px-6 py-3 bg-indigo-600 text-white font-semibold rounded-full shadow-lg
+                                     hover:bg-indigo-700 transition duration-300 ease-in-out transform hover:scale-105
+                                     focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75
+                                     md:self-end"
+                            >
+                                Add Task
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Task List Section -->
+                    <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                        <h2 class="text-2xl font-semibold text-gray-800 mb-4">Your Tasks</h2>
+                        <ul id="tasks-list" class="space-y-4">
+                            ${tasks.length === 0 ? `
+                                <p class="text-gray-600 text-center py-4">No tasks added yet. Start by adding a new task above!</p>
+                            ` : tasks.map(task => `
+                                <li
+                                    class="flex flex-col md:flex-row items-start md:items-center justify-between
+                                         bg-white p-4 rounded-lg shadow-md border border-gray-100
+                                         hover:shadow-lg transition duration-200 ease-in-out"
+                                >
+                                    <span class="text-lg text-gray-800 flex-grow mb-2 md:mb-0 md:mr-4">
+                                        ${task.description}
+                                    </span>
+                                    <button
+                                        data-task-id="${task.id}"
+                                        class="enter-task-button px-5 py-2 bg-blue-500 text-white font-medium rounded-full shadow-md
+                                               hover:bg-blue-600 transition duration-300 ease-in-out transform hover:scale-105
+                                               focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75"
+                                    >
+                                        Enter Task
+                                    </button>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                </div>
+            `;
+
+            // Add event listeners after rendering
+            document.getElementById('add-task-button').addEventListener('click', handleAddTask);
+            document.getElementById('new-task-description').addEventListener('input', (e) => {
+                newTaskDescription = e.target.value;
+            });
+            document.querySelectorAll('.enter-task-button').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const taskId = parseInt(e.target.dataset.taskId);
+                    const task = tasks.find(t => t.id === taskId);
+                    handleEnterTask(task);
+                });
+            });
+        }
+
+        // Function to render the task details view
+        function renderTaskDetails() {
+            if (!selectedTask) return; // Should not happen if called correctly
+
+            appContent.innerHTML = `
+                <div class="space-y-6">
+                    <h2 class="text-3xl font-semibold text-gray-800 mb-4">
+                        Task Details:
+                    </h2>
+                    <div class="bg-gray-50 p-6 rounded-lg shadow-inner border border-gray-200">
+                        <p class="text-lg text-gray-700">
+                            <span class="font-medium text-gray-900">Description:</span> ${selectedTask.description}
+                        </p>
+                    </div>
+
+                    <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Upload Screenshots Section -->
+                        <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                            <h3 class="text-2xl font-semibold text-gray-800 mb-4">Upload Screenshots</h3>
+                            <div class="flex flex-col gap-4">
+                                <input
+                                    type="file"
+                                    multiple
+                                    id="screenshot-file-input"
+                                    class="block w-full text-sm text-gray-700
+                                         file:mr-4 file:py-2 file:px-4
+                                         file:rounded-full file:border-0
+                                         file:text-sm file:font-semibold
+                                         file:bg-indigo-50 file:text-indigo-700
+                                         hover:file:bg-indigo-100 cursor-pointer rounded-lg border border-gray-300 p-2"
+                                    aria-label="Upload screenshots"
+                                />
+                                <button
+                                    id="submit-screenshots-button"
+                                    class="w-full px-6 py-3 bg-green-600 text-white font-semibold rounded-full shadow-lg
+                                         hover:bg-green-700 transition duration-300 ease-in-out transform hover:scale-105
+                                         focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75"
+                                >
+                                    Submit Screenshots
+                                </button>
+                            </div>
+                            <div id="selected-files-display" class="mt-4 text-gray-600 text-sm">
+                                ${selectedFiles.length > 0 ? `Selected files: ${selectedFiles.map(file => file.name).join(', ')}` : ''}
+                            </div>
+                        </div>
+
+                        <!-- Open Attachment Location Section -->
+                        <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200 flex flex-col justify-center items-center text-center">
+                            <h3 class="text-2xl font-semibold text-gray-800 mb-4">Or Open External Location</h3>
+                            <p class="text-gray-600 mb-4">Click below to go to an external link where you can attach your screenshots.</p>
+                            <button
+                                id="open-attachment-button"
+                                class="w-full px-6 py-3 bg-blue-600 text-white font-semibold rounded-full shadow-lg
+                                     hover:bg-blue-700 transition duration-300 ease-in-out transform hover:scale-105
+                                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75"
+                            >
+                                Open Attachment Location
+                            </button>
+                        </div>
+                    </div>
+
+                    ${selectedTask.screenshots.length > 0 ? `
+                        <div class="mt-6 bg-gray-50 p-6 rounded-xl shadow-lg border border-gray-200">
+                            <h3 class="text-2xl font-semibold text-gray-800 mb-3">Previously "Uploaded" Screenshots:</h3>
+                            <ul class="list-disc list-inside text-gray-700">
+                                ${selectedTask.screenshots.map((screenshot, index) => `
+                                    <li key="${index}" class="py-1">${screenshot}</li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+
+                    <button
+                        id="back-to-tasks-button"
+                        class="mt-8 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-full shadow-lg
+                             hover:bg-indigo-700 transition duration-300 ease-in-out transform hover:scale-105
+                             focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75"
+                    >
+                        ← Back to All Tasks
+                    </button>
+                </div>
+            `;
+
+            // Add event listeners after rendering
+            document.getElementById('screenshot-file-input').addEventListener('change', handleFileChange);
+            document.getElementById('submit-screenshots-button').addEventListener('click', handleSubmitScreenshots);
+            document.getElementById('open-attachment-button').addEventListener('click', handleOpenAttachmentLocation);
+            document.getElementById('back-to-tasks-button').addEventListener('click', handleBackToTasks);
+        }
+
+        // Function to handle adding a new task
+        function handleAddTask() {
+            if (newTaskDescription.trim() !== '') {
+                // Generate a unique ID for the new task
+                const newId = tasks.length > 0 ? Math.max(...tasks.map(t => t.id)) + 1 : 1;
+                tasks.push({ id: newId, description: newTaskDescription.trim(), screenshots: [] }); // Re-added screenshots array
+                newTaskDescription = ''; // Clear input
+                showMessage('Task added successfully!');
+                renderTaskList(); // Re-render the list
+            } else {
+                showMessage('Task description cannot be empty.');
+            }
+        }
+
+        // Function to handle entering a specific task (to view details and upload/redirect)
+        function handleEnterTask(task) {
+            selectedTask = task;
+            selectedFiles = []; // Clear any previously selected files
+            renderTaskDetails();
+        }
+
+        // Function to go back to the main task list view
+        function handleBackToTasks() {
+            selectedTask = null;
+            selectedFiles = [];
+            renderTaskList();
+        }
+
+        // Function to handle file selection for screenshots
+        function handleFileChange(event) {
+            selectedFiles = Array.from(event.target.files);
+            // Update the selected files display immediately
+            const selectedFilesDisplay = document.getElementById('selected-files-display');
+            if (selectedFilesDisplay) {
+                selectedFilesDisplay.textContent = selectedFiles.length > 0 ? `Selected files: ${selectedFiles.map(file => file.name).join(', ')}` : '';
+            }
+        }
+
+        // Function to simulate submitting screenshots
+        function handleSubmitScreenshots() {
+            if (selectedFiles.length > 0) {
+                const fileNames = selectedFiles.map(file => file.name);
+                console.log(`Submitting screenshots for task "${selectedTask.description}": ${fileNames.join(', ')}`);
+
+                // Update the selected task with the new screenshot names
+                selectedTask.screenshots.push(...fileNames);
+
+                // Update the global tasks array to reflect changes in selectedTask
+                tasks = tasks.map(task =>
+                    task.id === selectedTask.id
+                        ? { ...task, screenshots: selectedTask.screenshots }
+                        : task
+                );
+
+                showMessage(`Screenshots (${fileNames.join(', ')}) "uploaded" for task: "${selectedTask.description}"!`, 5000);
+                selectedFiles = []; // Clear selected files after "submission"
+                renderTaskDetails(); // Re-render to show updated screenshots list
+            } else {
+                showMessage('Please select at least one file to "upload".');
+            }
+        }
+
+        // Function to handle opening the external attachment location
+        function handleOpenAttachmentLocation() {
+            // Define the URL to which you want to redirect.
+            // You can change this to your desired link (e.g., a Google Drive folder, a shared document, etc.)
+            const redirectionUrl = 'https://www.example.com/your-screenshot-attachment-location'; // <<< CHANGE THIS URL
+
+            // Open the URL in a new tab
+            window.open(redirectionUrl, '_blank');
+
+            // Optionally, show a message that the page is redirecting
+            showMessage(`Opening attachment location for task: "${selectedTask.description}"...`, 3000);
+        }
+
+        // Initial render when the page loads
+        document.addEventListener('DOMContentLoaded', renderTaskList);
+    </script>
+</body>
+</html>
