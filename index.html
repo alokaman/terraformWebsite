@@ -27,6 +27,62 @@
         body {
             font-family: 'Inter', sans-serif;
         }
+
+        /* Modal specific styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8); /* Dark semi-transparent background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000; /* Ensure it's on top of other content */
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+        }
+
+        .modal-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            position: relative;
+            max-width: 90%;
+            max-height: 90%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain; /* Ensure the image fits within the modal without cropping */
+            border-radius: 0.75rem; /* rounded-xl */
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); /* shadow-2xl */
+        }
+
+        .modal-close-button {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 1.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 9999px; /* full rounded */
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+        }
+
+        .modal-close-button:hover {
+            background-color: rgba(255, 255, 255, 0.4);
+        }
     </style>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 font-inter">
@@ -45,6 +101,16 @@
         <!-- Content area for task list or task details -->
         <div id="app-content">
             <!-- Content will be dynamically loaded here by JavaScript -->
+        </div>
+    </div>
+
+    <!-- Full-screen Modal for Image Display -->
+    <div id="image-modal" class="modal-overlay">
+        <div class="modal-content">
+            <img id="modal-image" src="" alt="Full-screen screenshot">
+            <button id="modal-close-button" class="modal-close-button">
+                &times;
+            </button>
         </div>
     </div>
 
@@ -72,6 +138,9 @@
         // DOM elements
         const messageArea = document.getElementById('message-area');
         const appContent = document.getElementById('app-content');
+        const imageModal = document.getElementById('image-modal');
+        const modalImage = document.getElementById('modal-image');
+        const modalCloseButton = document.getElementById('modal-close-button');
 
         // Function to display messages to the user
         function showMessage(msg, duration = 3000) {
@@ -84,6 +153,18 @@
                 messageArea.classList.remove('animate-fade-in-down');
                 message = '';
             }, duration);
+        }
+
+        // Function to open the full-screen image modal
+        function openImageModal(imageUrl) {
+            modalImage.src = imageUrl;
+            imageModal.classList.add('open');
+        }
+
+        // Function to close the full-screen image modal
+        function closeImageModal() {
+            imageModal.classList.remove('open');
+            modalImage.src = ''; // Clear image source
         }
 
         // Function to render the main task list view
@@ -104,9 +185,9 @@
                             <button
                                 id="add-task-button"
                                 class="px-6 py-3 bg-indigo-600 text-white font-semibold rounded-full shadow-lg
-                                     hover:bg-indigo-700 transition duration-300 ease-in-out transform hover:scale-105
-                                     focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75
-                                     md:self-end"
+                                            hover:bg-indigo-700 transition duration-300 ease-in-out transform hover:scale-105
+                                            focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75
+                                            md:self-end"
                             >
                                 Add Task
                             </button>
@@ -122,8 +203,8 @@
                             ` : tasks.map(task => `
                                 <li
                                     class="flex flex-col md:flex-row items-start md:items-center justify-between
-                                         bg-white p-4 rounded-lg shadow-md border border-gray-100
-                                         hover:shadow-lg transition duration-200 ease-in-out"
+                                            bg-white p-4 rounded-lg shadow-md border border-gray-100
+                                            hover:shadow-lg transition duration-200 ease-in-out"
                                 >
                                     <span class="text-lg text-gray-800 flex-grow mb-2 md:mb-0 md:mr-4">
                                         ${task.description}
@@ -131,8 +212,8 @@
                                     <button
                                         data-task-id="${task.id}"
                                         class="enter-task-button px-5 py-2 bg-blue-500 text-white font-medium rounded-full shadow-md
-                                               hover:bg-blue-600 transition duration-300 ease-in-out transform hover:scale-105
-                                               focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75"
+                                                hover:bg-blue-600 transition duration-300 ease-in-out transform hover:scale-105
+                                                focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75"
                                     >
                                         Enter Task
                                     </button>
@@ -172,7 +253,7 @@
                         </p>
                     </div>
 
-                    <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="mt-8 grid grid-cols-1 gap-6">
                         <!-- Upload Screenshots Section -->
                         <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
                             <h3 class="text-2xl font-semibold text-gray-800 mb-4">Upload Screenshots</h3>
@@ -181,19 +262,20 @@
                                     type="file"
                                     multiple
                                     id="screenshot-file-input"
+                                    accept="image/*" <!-- Accept only image files -->
                                     class="block w-full text-sm text-gray-700
-                                         file:mr-4 file:py-2 file:px-4
-                                         file:rounded-full file:border-0
-                                         file:text-sm file:font-semibold
-                                         file:bg-indigo-50 file:text-indigo-700
-                                         hover:file:bg-indigo-100 cursor-pointer rounded-lg border border-gray-300 p-2"
+                                            file:mr-4 file:py-2 file:px-4
+                                            file:rounded-full file:border-0
+                                            file:text-sm file:font-semibold
+                                            file:bg-indigo-50 file:text-indigo-700
+                                            hover:file:bg-indigo-100 cursor-pointer rounded-lg border border-gray-300 p-2"
                                     aria-label="Upload screenshots"
                                 />
                                 <button
                                     id="submit-screenshots-button"
                                     class="w-full px-6 py-3 bg-green-600 text-white font-semibold rounded-full shadow-lg
-                                         hover:bg-green-700 transition duration-300 ease-in-out transform hover:scale-105
-                                         focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75"
+                                            hover:bg-green-700 transition duration-300 ease-in-out transform hover:scale-105
+                                            focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75"
                                 >
                                     Submit Screenshots
                                 </button>
@@ -202,38 +284,29 @@
                                 ${selectedFiles.length > 0 ? `Selected files: ${selectedFiles.map(file => file.name).join(', ')}` : ''}
                             </div>
                         </div>
-
-                        <!-- Open Attachment Location Section -->
-                        <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200 flex flex-col justify-center items-center text-center">
-                            <h3 class="text-2xl font-semibold text-gray-800 mb-4">Or Open External Location</h3>
-                            <p class="text-gray-600 mb-4">Click below to go to an external link where you can attach your screenshots.</p>
-                            <button
-                                id="open-attachment-button"
-                                class="w-full px-6 py-3 bg-blue-600 text-white font-semibold rounded-full shadow-lg
-                                     hover:bg-blue-700 transition duration-300 ease-in-out transform hover:scale-105
-                                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75"
-                            >
-                                Open Attachment Location
-                            </button>
-                        </div>
                     </div>
 
                     ${selectedTask.screenshots.length > 0 ? `
                         <div class="mt-6 bg-gray-50 p-6 rounded-xl shadow-lg border border-gray-200">
                             <h3 class="text-2xl font-semibold text-gray-800 mb-3">Previously "Uploaded" Screenshots:</h3>
-                            <ul class="list-disc list-inside text-gray-700">
-                                ${selectedTask.screenshots.map((screenshot, index) => `
-                                    <li key="${index}" class="py-1">${screenshot}</li>
+                            <div id="screenshot-previews-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-4">
+                                ${selectedTask.screenshots.map((screenshotUrl, index) => `
+                                    <div class="relative group">
+                                        <img src="${screenshotUrl}" alt="Screenshot ${index + 1}" class="screenshot-preview w-full h-32 object-cover rounded-lg shadow-md border border-gray-300 group-hover:scale-105 transition-transform duration-200 ease-in-out cursor-pointer">
+                                        <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-lg">
+                                            <span class="text-white text-xs font-semibold p-1 bg-gray-800 bg-opacity-75 rounded">${screenshotUrl.substring(screenshotUrl.lastIndexOf('/') + 1, screenshotUrl.indexOf('?')) || 'Image'}</span>
+                                        </div>
+                                    </div>
                                 `).join('')}
-                            </ul>
+                            </div>
                         </div>
                     ` : ''}
 
                     <button
                         id="back-to-tasks-button"
                         class="mt-8 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-full shadow-lg
-                             hover:bg-indigo-700 transition duration-300 ease-in-out transform hover:scale-105
-                             focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75"
+                                hover:bg-indigo-700 transition duration-300 ease-in-out transform hover:scale-105
+                                focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75"
                     >
                         ← Back to All Tasks
                     </button>
@@ -243,8 +316,15 @@
             // Add event listeners after rendering
             document.getElementById('screenshot-file-input').addEventListener('change', handleFileChange);
             document.getElementById('submit-screenshots-button').addEventListener('click', handleSubmitScreenshots);
-            document.getElementById('open-attachment-button').addEventListener('click', handleOpenAttachmentLocation);
             document.getElementById('back-to-tasks-button').addEventListener('click', handleBackToTasks);
+
+            // NEW: Attach click listeners to screenshot previews
+            const screenshotPreviews = document.querySelectorAll('.screenshot-preview');
+            screenshotPreviews.forEach(img => {
+                img.addEventListener('click', (e) => {
+                    openImageModal(e.target.src);
+                });
+            });
         }
 
         // Function to handle adding a new task
@@ -252,7 +332,7 @@
             if (newTaskDescription.trim() !== '') {
                 // Generate a unique ID for the new task
                 const newId = tasks.length > 0 ? Math.max(...tasks.map(t => t.id)) + 1 : 1;
-                tasks.push({ id: newId, description: newTaskDescription.trim(), screenshots: [] }); // Re-added screenshots array
+                tasks.push({ id: newId, description: newTaskDescription.trim(), screenshots: [] });
                 newTaskDescription = ''; // Clear input
                 showMessage('Task added successfully!');
                 renderTaskList(); // Re-render the list
@@ -277,22 +357,34 @@
 
         // Function to handle file selection for screenshots
         function handleFileChange(event) {
-            selectedFiles = Array.from(event.target.files);
-            // Update the selected files display immediately
+            // Filter for only image files
+            selectedFiles = Array.from(event.target.files).filter(file => file.type.startsWith('image/'));
+            
             const selectedFilesDisplay = document.getElementById('selected-files-display');
             if (selectedFilesDisplay) {
                 selectedFilesDisplay.textContent = selectedFiles.length > 0 ? `Selected files: ${selectedFiles.map(file => file.name).join(', ')}` : '';
+            }
+            if (selectedFiles.length < event.target.files.length) {
+                showMessage('Only image files are accepted for preview. Non-image files were ignored.', 4000);
             }
         }
 
         // Function to simulate submitting screenshots
         function handleSubmitScreenshots() {
             if (selectedFiles.length > 0) {
-                const fileNames = selectedFiles.map(file => file.name);
+                const newScreenshotUrls = [];
+                const fileNames = [];
+
+                selectedFiles.forEach(file => {
+                    const objectURL = URL.createObjectURL(file); // Create a temporary URL for the file
+                    newScreenshotUrls.push(objectURL);
+                    fileNames.push(file.name);
+                });
+
                 console.log(`Submitting screenshots for task "${selectedTask.description}": ${fileNames.join(', ')}`);
 
-                // Update the selected task with the new screenshot names
-                selectedTask.screenshots.push(...fileNames);
+                // Update the selected task with the new screenshot URLs
+                selectedTask.screenshots.push(...newScreenshotUrls);
 
                 // Update the global tasks array to reflect changes in selectedTask
                 tasks = tasks.map(task =>
@@ -301,29 +393,26 @@
                         : task
                 );
 
-                showMessage(`Screenshots (${fileNames.join(', ')}) "uploaded" for task: "${selectedTask.description}"!`, 5000);
+                showMessage(`Screenshots (${fileNames.join(', ')}) "uploaded" and visible for task: "${selectedTask.description}"!`, 5000);
                 selectedFiles = []; // Clear selected files after "submission"
-                renderTaskDetails(); // Re-render to show updated screenshots list
+                renderTaskDetails(); // Re-render to show updated screenshots list with previews
             } else {
-                showMessage('Please select at least one file to "upload".');
+                showMessage('Please select at least one image file to "upload".');
             }
         }
 
-        // Function to handle opening the external attachment location
-        function handleOpenAttachmentLocation() {
-            // Define the URL to which you want to redirect.
-            // You can change this to your desired link (e.g., a Google Drive folder, a shared document, etc.)
-            const redirectionUrl = 'https://www.example.com/your-screenshot-attachment-location'; // <<< CHANGE THIS URL
-
-            // Open the URL in a new tab
-            window.open(redirectionUrl, '_blank');
-
-            // Optionally, show a message that the page is redirecting
-            showMessage(`Opening attachment location for task: "${selectedTask.description}"...`, 3000);
-        }
-
         // Initial render when the page loads
-        document.addEventListener('DOMContentLoaded', renderTaskList);
+        document.addEventListener('DOMContentLoaded', () => {
+            renderTaskList();
+            // Attach event listener to the modal close button
+            modalCloseButton.addEventListener('click', closeImageModal);
+            // Close modal when clicking outside the image
+            imageModal.addEventListener('click', (e) => {
+                if (e.target === imageModal) {
+                    closeImageModal();
+                }
+            });
+        });
     </script>
 </body>
 </html>
