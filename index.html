@@ -77,7 +77,7 @@
         // If tasks already exist in Firestore, they will be loaded from there instead.
         window.tasks = [
             { id: 'ec2', description: 'Amazon EC2', screenshots: [], createdAt: Date.now() + 1 },
-            { id: 'vpc', description: 'Amazon VPC', screenshots: [], createdAt: Date.now() + 2 },
+            { id: 'vpc', description: 'Amazon VPC', screenshots: ['https://drive.google.com/file/d/1ET2d4f9WnYUc5B6n85JValeJjG-_TyoJ/view?usp=sharing', 'https://drive.google.com/file/d/1ng1oX9BFqJ4m3JAeLpW9Me9yTlGPQa6H/view?usp=sharing'], createdAt: Date.now() + 2 }, // Both links added here
             { id: 'lambda', description: 'AWS Lambda', screenshots: [], createdAt: Date.now() + 3 },
             { id: 's3', description: 'Amazon S3', screenshots: [], createdAt: Date.now() + 4 },
             { id: 'ebs', description: 'Amazon EBS', screenshots: [], createdAt: Date.now() + 5 },
@@ -90,7 +90,7 @@
         ];
         window.newTaskDescription = '';
         window.selectedTask = null;
-        window.selectedFiles = [];
+        window.newScreenshotName = ''; // New state variable for the screenshot input
         window.message = '';
 
         // DOM elements
@@ -198,48 +198,48 @@
                         </p>
                     </div>
 
-                    <div class="mt-8">
-                        <!-- Upload Screenshots Section -->
-                        <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
-                            <h3 class="text-2xl font-semibold text-gray-800 mb-4">Upload Screenshots</h3>
-                            <div class="flex flex-col gap-4">
-                                <input
-                                    type="file"
-                                    multiple
-                                    id="screenshot-file-input"
-                                    class="block w-full text-sm text-gray-700
-                                         file:mr-4 file:py-2 file:px-4
-                                         file:rounded-full file:border-0
-                                         file:text-sm file:font-semibold
-                                         file:bg-indigo-50 file:text-indigo-700
-                                         hover:file:bg-indigo-100 cursor-pointer rounded-lg border border-gray-300 p-2"
-                                    aria-label="Upload screenshots"
-                                />
-                                <button
-                                    id="submit-screenshots-button"
-                                    class="w-full px-6 py-3 bg-green-600 text-white font-semibold rounded-full shadow-lg
-                                         hover:bg-green-700 transition duration-300 ease-in-out transform hover:scale-105
-                                         focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75"
-                                >
-                                    Submit Screenshots
-                                </button>
-                            </div>
-                            <div id="selected-files-display" class="mt-4 text-gray-600 text-sm">
-                                ${window.selectedFiles.length > 0 ? `Selected files: ${window.selectedFiles.map(file => file.name).join(', ')}` : ''}
-                            </div>
+                    <!-- Section to add screenshot names/links -->
+                    <div class="mt-8 bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                        <h3 class="text-2xl font-semibold text-gray-800 mb-4">Add Screenshot Name/Link</h3>
+                        <div class="flex flex-col md:flex-row gap-4">
+                            <input
+                                type="text"
+                                id="new-screenshot-input"
+                                placeholder="Enter screenshot name or URL (e.g., 'my-screenshot.png' or 'https://link.to/image.jpg')"
+                                value="${window.newScreenshotName}"
+                                class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                aria-label="New screenshot name or URL"
+                            />
+                            <button
+                                id="add-screenshot-name-button"
+                                class="w-full md:w-auto px-6 py-3 bg-purple-600 text-white font-semibold rounded-full shadow-lg
+                                     hover:bg-purple-700 transition duration-300 ease-in-out transform hover:scale-105
+                                     focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-75"
+                            >
+                                Add Screenshot
+                            </button>
                         </div>
                     </div>
 
                     ${window.selectedTask.screenshots && window.selectedTask.screenshots.length > 0 ? `
                         <div class="mt-6 bg-gray-50 p-6 rounded-xl shadow-lg border border-gray-200">
-                            <h3 class="text-2xl font-semibold text-gray-800 mb-3">Previously "Uploaded" Screenshots:</h3>
+                            <h3 class="text-2xl font-semibold text-gray-800 mb-3">Attached Screenshots:</h3>
                             <ul class="list-disc list-inside text-gray-700">
                                 ${window.selectedTask.screenshots.map((screenshot, index) => `
-                                    <li key="${index}" class="py-1">${screenshot}</li>
+                                    <li key="${index}" class="py-1">
+                                        ${screenshot.startsWith('http://') || screenshot.startsWith('https://') ?
+                                            `<a href="${screenshot}" target="_blank" class="text-blue-600 hover:underline">${screenshot}</a>` :
+                                            screenshot
+                                        }
+                                    </li>
                                 `).join('')}
                             </ul>
                         </div>
-                    ` : ''}
+                    ` : `
+                        <div class="mt-6 bg-gray-50 p-6 rounded-xl shadow-lg border border-gray-200 text-gray-600 text-center">
+                            <p>No screenshots attached yet for this task.</p>
+                        </div>
+                    `}
 
                     <button
                         id="back-to-tasks-button"
@@ -253,8 +253,10 @@
             `;
 
             // Add event listeners after rendering
-            document.getElementById('screenshot-file-input').addEventListener('change', handleFileChange);
-            document.getElementById('submit-screenshots-button').addEventListener('click', handleSubmitScreenshots);
+            document.getElementById('new-screenshot-input').addEventListener('input', (e) => {
+                window.newScreenshotName = e.target.value;
+            });
+            document.getElementById('add-screenshot-name-button').addEventListener('click', handleAddScreenshotName);
             document.getElementById('back-to-tasks-button').addEventListener('click', handleBackToTasks);
         }
 
@@ -266,20 +268,18 @@
             }
             if (window.newTaskDescription.trim() !== '') {
                 try {
-                    // Firestore automatically generates a unique ID
                     const newTaskRef = doc(collection(db, `artifacts/${__app_id}/public/data/tasks`));
-                    const taskId = newTaskRef.id; // Get the auto-generated ID
+                    const taskId = newTaskRef.id;
 
                     await setDoc(newTaskRef, {
-                        id: taskId, // Store the ID within the document
+                        id: taskId,
                         description: window.newTaskDescription.trim(),
                         screenshots: [],
-                        createdAt: Date.now() // Add a timestamp for potential ordering
+                        createdAt: Date.now()
                     });
 
-                    window.newTaskDescription = ''; // Clear input
+                    window.newTaskDescription = '';
                     showMessage('Task added successfully!');
-                    // No need to call renderTaskList here, onSnapshot will handle it
                 } catch (error) {
                     console.error("Error adding task: ", error);
                     showMessage('Error adding task. Please try again.', 3000);
@@ -289,66 +289,52 @@
             }
         }
 
-        // Function to handle entering a specific task (to view details and upload)
+        // Function to handle entering a specific task
         function handleEnterTask(task) {
             window.selectedTask = task;
-            window.selectedFiles = []; // Clear any previously selected files
+            window.newScreenshotName = ''; // Clear input when entering a new task
             renderTaskDetails();
         }
 
         // Function to go back to the main task list view
         function handleBackToTasks() {
             window.selectedTask = null;
-            window.selectedFiles = [];
+            window.newScreenshotName = ''; // Clear input when going back to list
             renderTaskList();
         }
 
-        // Function to handle file selection for screenshots
-        function handleFileChange(event) {
-            window.selectedFiles = Array.from(event.target.files);
-            // Update the selected files display immediately
-            const selectedFilesDisplay = document.getElementById('selected-files-display');
-            if (selectedFilesDisplay) {
-                selectedFilesDisplay.textContent = window.selectedFiles.length > 0 ? `Selected files: ${window.selectedFiles.map(file => file.name).join(', ')}` : '';
-            }
-        }
-
-        // Function to simulate submitting screenshots and update Firestore
-        async function handleSubmitScreenshots() {
+        // Function to handle adding a screenshot name/link to the current task
+        async function handleAddScreenshotName() {
             if (!isAuthReady) {
                 showMessage('Authentication not ready. Please wait.', 3000);
                 return;
             }
-            if (window.selectedFiles.length > 0) {
+            if (window.newScreenshotName.trim() !== '') {
                 try {
-                    const fileNames = window.selectedFiles.map(file => file.name);
-                    console.log(`Simulating submission for task "${window.selectedTask.description}": ${fileNames.join(', ')}`);
-
-                    // Get the current screenshots from the selected task (from the global tasks array)
+                    const screenshotToAdd = window.newScreenshotName.trim();
                     const currentTaskInState = window.tasks.find(t => t.id === window.selectedTask.id);
-                    const updatedScreenshots = [...(currentTaskInState?.screenshots || []), ...fileNames];
+                    const updatedScreenshots = [...(currentTaskInState?.screenshots || []), screenshotToAdd];
 
                     const taskRef = doc(db, `artifacts/${__app_id}/public/data/tasks`, window.selectedTask.id);
                     await updateDoc(taskRef, {
                         screenshots: updatedScreenshots
                     });
 
-                    showMessage(`Screenshots (${fileNames.join(', ')}) "uploaded" for task: "${window.selectedTask.description}"!`, 5000);
-                    window.selectedFiles = []; // Clear selected files after "submission"
-                    // No need to call renderTaskDetails here, onSnapshot will update window.tasks and trigger re-render
+                    showMessage(`Screenshot "${screenshotToAdd}" attached successfully!`, 5000);
+                    window.newScreenshotName = ''; // Clear the input field
+                    // The onSnapshot listener will re-render renderTaskDetails with updated data
                 } catch (error) {
-                    console.error("Error updating screenshots: ", error);
-                    showMessage('Error updating screenshots. Please try again.', 3000);
+                    console.error("Error attaching screenshot: ", error);
+                    showMessage('Error attaching screenshot. Please try again.', 3000);
                 }
             } else {
-                showMessage('Please select at least one file to "upload".');
+                showMessage('Screenshot name or URL cannot be empty.');
             }
         }
 
         // Firebase Initialization and Authentication
         window.onload = async function() {
             try {
-                // Mandatory global variables for Firebase config and app ID
                 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
                 const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
 
@@ -362,28 +348,24 @@
                 db = getFirestore(app);
                 auth = getAuth(app);
 
-                // Authenticate user
                 if (typeof __initial_auth_token !== 'undefined') {
                     await signInWithCustomToken(auth, __initial_auth_token);
                 } else {
                     await signInAnonymously(auth);
                 }
 
-                // Listen for auth state changes
                 onAuthStateChanged(auth, (user) => {
                     if (user) {
                         userId = user.uid;
                         userIdDisplay.textContent = userId;
                         isAuthReady = true;
                         console.log("Firebase authenticated. User ID:", userId);
-                        // Once authenticated, start listening for tasks
                         listenForTasks();
                     } else {
                         userId = 'anonymous';
                         userIdDisplay.textContent = 'Not authenticated';
                         isAuthReady = false;
                         console.log("Firebase not authenticated.");
-                        // If not authenticated, ensure tasks array is empty and render
                         window.tasks = [];
                         renderTaskList();
                     }
@@ -402,12 +384,10 @@
                 return;
             }
 
-            loadingIndicator.classList.remove('hidden'); // Show loading indicator
+            loadingIndicator.classList.remove('hidden');
 
             const tasksCollectionRef = collection(db, `artifacts/${__app_id}/public/data/tasks`);
-            // Note: orderBy is commented out to avoid requiring additional indexes in Firestore
-            // If you need specific ordering, you can sort the 'window.tasks' array in memory after fetching.
-            const q = query(tasksCollectionRef); // No orderBy for now
+            const q = query(tasksCollectionRef);
 
             onSnapshot(q, (snapshot) => {
                 const fetchedTasks = [];
@@ -415,7 +395,9 @@
                     fetchedTasks.push({ id: doc.id, ...doc.data() });
                 });
 
-                // If Firestore is empty, populate with initial tasks
+                // Check if Firestore is empty and populate with initial tasks if needed
+                // This logic ensures that if the database is fresh, it gets the predefined tasks.
+                // It also handles the case where the user might clear the database.
                 if (fetchedTasks.length === 0 && window.tasks.length > 0) {
                     console.log("Firestore is empty, populating with initial tasks...");
                     window.tasks.forEach(async (task) => {
@@ -427,8 +409,8 @@
                         }
                     });
                 } else {
-                     // Sort tasks by createdAt if needed, or by description
-                    fetchedTasks.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)); // Sort by creation time
+                    // Sort tasks by createdAt (if available) for consistent order
+                    fetchedTasks.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
                     window.tasks = fetchedTasks;
                 }
 
@@ -436,27 +418,24 @@
 
                 // Re-render the appropriate view based on current state
                 if (window.selectedTask) {
-                    // Update selectedTask if it's still in the fetched list
                     const updatedSelectedTask = window.tasks.find(t => t.id === window.selectedTask.id);
                     if (updatedSelectedTask) {
                         window.selectedTask = updatedSelectedTask;
                         renderTaskDetails();
                     } else {
-                        // If selected task was deleted, go back to list
                         handleBackToTasks();
                     }
                 } else {
                     renderTaskList();
                 }
-                loadingIndicator.classList.add('hidden'); // Hide loading indicator
+                loadingIndicator.classList.add('hidden');
             }, (error) => {
                 console.error("Error listening to tasks:", error);
                 showMessage("Error loading tasks. Please check your connection.", 5000);
-                loadingIndicator.classList.add('hidden'); // Hide loading indicator on error
+                loadingIndicator.classList.add('hidden');
             });
         }
 
-        // Initial render (will be overwritten by Firestore listener once ready)
         document.addEventListener('DOMContentLoaded', () => {
             renderTaskList();
         });
