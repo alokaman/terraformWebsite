@@ -84,56 +84,59 @@
             background-color: rgba(255, 255, 255, 0.4);
         }
     </style>
-</head>
-<body class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 font-inter">
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    <!-- Main container with responsive padding and max width -->
-    <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-2xl p-6 md:p-8 lg:p-10">
-        <h1 class="text-4xl font-bold text-center text-indigo-700 mb-8">
-            My Task Manager
-        </h1>
+        // Global Firebase variables (provided by the environment)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
-        <!-- Message display area -->
-        <div id="message-area" class="hidden bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded-md relative mb-6 text-center shadow-md animate-fade-in-down">
-            <!-- Message will be inserted here by JavaScript -->
-        </div>
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
 
-        <!-- Content area for task list or task details -->
-        <div id="app-content">
-            <!-- Content will be dynamically loaded here by JavaScript -->
-        </div>
-    </div>
+        let currentUserId = null; // To store the authenticated user ID
+        let isAuthReady = false; // Flag to indicate if auth state is known
 
-    <!-- Full-screen Modal for Image Display -->
-    <div id="image-modal" class="modal-overlay">
-        <div class="modal-content">
-            <img id="modal-image" src="" alt="Full-screen screenshot">
-            <button id="modal-close-button" class="modal-close-button">
-                &times;
-            </button>
-        </div>
-    </div>
+        // Listen for authentication state changes
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUserId = user.uid;
+                console.log("Authenticated as:", currentUserId);
+            } else {
+                // Sign in anonymously if no user is found or if initial auth token is not provided
+                try {
+                    if (initialAuthToken) {
+                        await signInWithCustomToken(auth, initialAuthToken);
+                        currentUserId = auth.currentUser.uid;
+                        console.log("Signed in with custom token:", currentUserId);
+                    } else {
+                        await signInAnonymously(auth);
+                        currentUserId = auth.currentUser.uid;
+                        console.log("Signed in anonymously:", currentUserId);
+                    }
+                } catch (error) {
+                    console.error("Firebase authentication error:", error);
+                    showMessage("Authentication failed. Please try again.", 5000);
+                }
+            }
+            isAuthReady = true;
+            // Once authenticated, start fetching tasks
+            fetchTasksFromFirestore();
+        });
 
-    <script>
-        // Global state variables
-        // Initial tasks array populated with the provided AWS services
-        let tasks = [
-            { id: 1, description: 'Amazon EC2', screenshots: [] },
-            { id: 2, description: 'Amazon VPC', screenshots: [] },
-            { id: 3, description: 'AWS Lambda', screenshots: [] },
-            { id: 4, description: 'Amazon S3', screenshots: [] },
-            { id: 5, description: 'Amazon EBS', screenshots: [] },
-            { id: 6, description: 'Amazon RDS', screenshots: [] },
-            { id: 7, description: 'Amazon Athena', screenshots: [] },
-            { id: 8, description: 'Amazon CloudWatch', screenshots: [] },
-            { id: 9, description: 'AWS CloudTrail', screenshots: [] },
-            { id: 10, description: 'AWS CloudFormation', screenshots: [] },
-            { id: 11, description: 'AWS CDK', screenshots: [] }
-        ];
-        let newTaskDescription = '';
-        let selectedTask = null; // Holds the task currently being viewed in detail
-        let selectedFiles = []; // Holds files selected for "upload"
-        let message = ''; // Holds messages to display to the user
+        // --- Global state variables (now managed with Firestore data) ---
+        // tasks array will be populated by Firestore listener
+        window.tasks = []; // Make global for easier access in inline HTML
+        window.newTaskDescription = '';
+        window.selectedTask = null; // Holds the task currently being viewed in detail
+        window.newImageUrl = ''; // Holds the URL for new image attachments
+        window.message = ''; // Holds messages to display to the user
 
         // DOM elements
         const messageArea = document.getElementById('message-area');
@@ -143,28 +146,154 @@
         const modalCloseButton = document.getElementById('modal-close-button');
 
         // Function to display messages to the user
-        function showMessage(msg, duration = 3000) {
-            message = msg;
-            messageArea.textContent = message;
+        window.showMessage = function(msg, duration = 3000) {
+            window.message = msg;
+            messageArea.textContent = window.message;
             messageArea.classList.remove('hidden');
             messageArea.classList.add('animate-fade-in-down');
             setTimeout(() => {
                 messageArea.classList.add('hidden');
                 messageArea.classList.remove('animate-fade-in-down');
-                message = '';
+                window.message = '';
             }, duration);
         }
 
         // Function to open the full-screen image modal
-        function openImageModal(imageUrl) {
+        window.openImageModal = function(imageUrl) {
             modalImage.src = imageUrl;
             imageModal.classList.add('open');
         }
 
         // Function to close the full-screen image modal
-        function closeImageModal() {
+        window.closeImageModal = function() {
             imageModal.classList.remove('open');
             modalImage.src = ''; // Clear image source
+        }
+
+        // --- Firestore Operations ---
+        // Collection reference for public tasks
+        const getTasksCollectionRef = () => {
+             // Use a public collection path for data visible to all visitors
+             return collection(db, `artifacts/${appId}/public/data/tasks`);
+        };
+
+        // Fetch tasks from Firestore in real-time
+        function fetchTasksFromFirestore() {
+            if (!isAuthReady) {
+                console.log("Authentication not ready, cannot fetch tasks.");
+                return;
+            }
+
+            // Listen for real-time updates
+            onSnapshot(getTasksCollectionRef(), (snapshot) => {
+                const fetchedTasks = snapshot.docs.map(doc => ({
+                    id: doc.id, // Firestore document ID
+                    ...doc.data()
+                }));
+                window.tasks = fetchedTasks;
+                console.log("Tasks fetched from Firestore:", window.tasks);
+
+                // If currently viewing a task, update its details to reflect changes
+                if (window.selectedTask) {
+                    const updatedSelectedTask = window.tasks.find(t => t.id === window.selectedTask.id);
+                    if (updatedSelectedTask) {
+                        window.selectedTask = updatedSelectedTask;
+                    } else {
+                        // If the selected task was deleted by another user, go back to list
+                        window.selectedTask = null;
+                    }
+                }
+                renderAppContent(); // Re-render based on updated tasks
+            }, (error) => {
+                console.error("Error fetching tasks:", error);
+                showMessage("Failed to load tasks. Please check your internet connection.", 5000);
+            });
+        }
+
+        // Function to handle adding a new task to Firestore
+        window.handleAddTask = async function() {
+            if (window.newTaskDescription.trim() === '') {
+                showMessage('Task description cannot be empty.');
+                return;
+            }
+            if (!currentUserId) {
+                 showMessage('Authentication not ready. Please wait.', 3000);
+                 return;
+            }
+
+            try {
+                const newTask = {
+                    description: window.newTaskDescription.trim(),
+                    screenshots: [], // Initialize with empty array
+                    createdAt: new Date().toISOString(),
+                    createdBy: currentUserId
+                };
+                await addDoc(getTasksCollectionRef(), newTask);
+                window.newTaskDescription = ''; // Clear input
+                showMessage('Task added successfully!');
+            } catch (e) {
+                console.error("Error adding document: ", e);
+                showMessage('Failed to add task. Please try again.', 5000);
+            }
+        }
+
+        // Function to handle attaching an image URL to a task in Firestore
+        window.handleAddScreenshotUrl = async function() {
+            if (window.newImageUrl.trim() === '') {
+                showMessage('Image URL cannot be empty.');
+                return;
+            }
+            if (!window.selectedTask) {
+                showMessage('No task selected to attach image to.', 3000);
+                return;
+            }
+            if (!currentUserId) {
+                 showMessage('Authentication not ready. Please wait.', 3000);
+                 return;
+            }
+
+            const url = window.newImageUrl.trim();
+            // Basic URL validation
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                showMessage('Please enter a valid image URL starting with http:// or https://', 5000);
+                return;
+            }
+
+            try {
+                const taskRef = doc(db, getTasksCollectionRef().id, window.selectedTask.id);
+                const updatedScreenshots = [...window.selectedTask.screenshots, url];
+                await updateDoc(taskRef, {
+                    screenshots: updatedScreenshots
+                });
+                window.newImageUrl = ''; // Clear input
+                showMessage('Image attached successfully!');
+            } catch (e) {
+                console.error("Error updating document: ", e);
+                showMessage('Failed to attach image. Please try again.', 5000);
+            }
+        }
+
+        // Function to handle entering a specific task (to view details)
+        window.handleEnterTask = function(task) {
+            window.selectedTask = task;
+            window.newImageUrl = ''; // Clear previous image URL input
+            renderAppContent(); // Re-render to task details
+        }
+
+        // Function to go back to the main task list view
+        window.handleBackToTasks = function() {
+            window.selectedTask = null;
+            window.newImageUrl = '';
+            renderAppContent(); // Re-render to task list
+        }
+
+        // Main render function to decide which view to show
+        function renderAppContent() {
+            if (window.selectedTask) {
+                renderTaskDetails();
+            } else {
+                renderTaskList();
+            }
         }
 
         // Function to render the main task list view
@@ -181,7 +310,7 @@
                                 rows="3"
                                 class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-y"
                                 aria-label="New task description"
-                            >${newTaskDescription}</textarea>
+                            >${window.newTaskDescription}</textarea>
                             <button
                                 id="add-task-button"
                                 class="px-6 py-3 bg-indigo-600 text-white font-semibold rounded-full shadow-lg
@@ -198,9 +327,9 @@
                     <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
                         <h2 class="text-2xl font-semibold text-gray-800 mb-4">Your Tasks</h2>
                         <ul id="tasks-list" class="space-y-4">
-                            ${tasks.length === 0 ? `
+                            ${window.tasks.length === 0 ? `
                                 <p class="text-gray-600 text-center py-4">No tasks added yet. Start by adding a new task above!</p>
-                            ` : tasks.map(task => `
+                            ` : window.tasks.map(task => `
                                 <li
                                     class="flex flex-col md:flex-row items-start md:items-center justify-between
                                             bg-white p-4 rounded-lg shadow-md border border-gray-100
@@ -225,22 +354,22 @@
             `;
 
             // Add event listeners after rendering
-            document.getElementById('add-task-button').addEventListener('click', handleAddTask);
+            document.getElementById('add-task-button').addEventListener('click', window.handleAddTask);
             document.getElementById('new-task-description').addEventListener('input', (e) => {
-                newTaskDescription = e.target.value;
+                window.newTaskDescription = e.target.value;
             });
             document.querySelectorAll('.enter-task-button').forEach(button => {
                 button.addEventListener('click', (e) => {
-                    const taskId = parseInt(e.target.dataset.taskId);
-                    const task = tasks.find(t => t.id === taskId);
-                    handleEnterTask(task);
+                    const taskId = e.target.dataset.taskId; // Firestore ID is a string
+                    const task = window.tasks.find(t => t.id === taskId);
+                    window.handleEnterTask(task);
                 });
             });
         }
 
         // Function to render the task details view
         function renderTaskDetails() {
-            if (!selectedTask) return; // Should not happen if called correctly
+            if (!window.selectedTask) return; // Should not happen if called correctly
 
             appContent.innerHTML = `
                 <div class="space-y-6">
@@ -249,52 +378,46 @@
                     </h2>
                     <div class="bg-gray-50 p-6 rounded-lg shadow-inner border border-gray-200">
                         <p class="text-lg text-gray-700">
-                            <span class="font-medium text-gray-900">Description:</span> ${selectedTask.description}
+                            <span class="font-medium text-gray-900">Description:</span> ${window.selectedTask.description}
                         </p>
                     </div>
 
                     <div class="mt-8 grid grid-cols-1 gap-6">
-                        <!-- Upload Screenshots Section -->
+                        <!-- Attach Image URL Section -->
                         <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
-                            <h3 class="text-2xl font-semibold text-gray-800 mb-4">Upload Screenshots</h3>
+                            <h3 class="text-2xl font-semibold text-gray-800 mb-4">Attach Image by URL</h3>
                             <div class="flex flex-col gap-4">
                                 <input
-                                    type="file"
-                                    multiple
-                                    id="screenshot-file-input"
-                                    accept="image/*" <!-- Accept only image files -->
-                                    class="block w-full text-sm text-gray-700
-                                            file:mr-4 file:py-2 file:px-4
-                                            file:rounded-full file:border-0
-                                            file:text-sm file:font-semibold
-                                            file:bg-indigo-50 file:text-indigo-700
-                                            hover:file:bg-indigo-100 cursor-pointer rounded-lg border border-gray-300 p-2"
-                                    aria-label="Upload screenshots"
+                                    type="url"
+                                    id="image-url-input"
+                                    placeholder="Paste image URL (e.g., https://example.com/image.jpg)"
+                                    class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                    aria-label="Image URL input"
+                                    value="${window.newImageUrl}"
                                 />
                                 <button
-                                    id="submit-screenshots-button"
+                                    id="add-image-url-button"
                                     class="w-full px-6 py-3 bg-green-600 text-white font-semibold rounded-full shadow-lg
                                             hover:bg-green-700 transition duration-300 ease-in-out transform hover:scale-105
                                             focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75"
                                 >
-                                    Submit Screenshots
+                                    Attach Image
                                 </button>
-                            </div>
-                            <div id="selected-files-display" class="mt-4 text-gray-600 text-sm">
-                                ${selectedFiles.length > 0 ? `Selected files: ${selectedFiles.map(file => file.name).join(', ')}` : ''}
                             </div>
                         </div>
                     </div>
 
-                    ${selectedTask.screenshots.length > 0 ? `
+                    ${window.selectedTask.screenshots && window.selectedTask.screenshots.length > 0 ? `
                         <div class="mt-6 bg-gray-50 p-6 rounded-xl shadow-lg border border-gray-200">
-                            <h3 class="text-2xl font-semibold text-gray-800 mb-3">Previously "Uploaded" Screenshots:</h3>
+                            <h3 class="text-2xl font-semibold text-gray-800 mb-3">Attached Screenshots:</h3>
                             <div id="screenshot-previews-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-4">
-                                ${selectedTask.screenshots.map((screenshotUrl, index) => `
+                                ${window.selectedTask.screenshots.map((screenshotUrl, index) => `
                                     <div class="relative group">
-                                        <img src="${screenshotUrl}" alt="Screenshot ${index + 1}" class="screenshot-preview w-full h-32 object-cover rounded-lg shadow-md border border-gray-300 group-hover:scale-105 transition-transform duration-200 ease-in-out cursor-pointer">
+                                        <img src="${screenshotUrl}" alt="Attached Screenshot ${index + 1}" class="screenshot-preview w-full h-32 object-cover rounded-lg shadow-md border border-gray-300 group-hover:scale-105 transition-transform duration-200 ease-in-out cursor-pointer" onerror="this.onerror=null;this.src='https://placehold.co/128x128/cccccc/333333?text=Broken+Image';">
                                         <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-lg">
-                                            <span class="text-white text-xs font-semibold p-1 bg-gray-800 bg-opacity-75 rounded">${screenshotUrl.substring(screenshotUrl.lastIndexOf('/') + 1, screenshotUrl.indexOf('?')) || 'Image'}</span>
+                                            <span class="text-white text-xs font-semibold p-1 bg-gray-800 bg-opacity-75 rounded">
+                                                ${screenshotUrl.substring(screenshotUrl.lastIndexOf('/') + 1) || 'Image'}
+                                            </span>
                                         </div>
                                     </div>
                                 `).join('')}
@@ -314,102 +437,30 @@
             `;
 
             // Add event listeners after rendering
-            document.getElementById('screenshot-file-input').addEventListener('change', handleFileChange);
-            document.getElementById('submit-screenshots-button').addEventListener('click', handleSubmitScreenshots);
-            document.getElementById('back-to-tasks-button').addEventListener('click', handleBackToTasks);
+            document.getElementById('image-url-input').addEventListener('input', (e) => {
+                window.newImageUrl = e.target.value;
+            });
+            document.getElementById('add-image-url-button').addEventListener('click', window.handleAddScreenshotUrl);
+            document.getElementById('back-to-tasks-button').addEventListener('click', window.handleBackToTasks);
 
-            // NEW: Attach click listeners to screenshot previews
+            // Attach click listeners to screenshot previews (if any)
             const screenshotPreviews = document.querySelectorAll('.screenshot-preview');
             screenshotPreviews.forEach(img => {
                 img.addEventListener('click', (e) => {
-                    openImageModal(e.target.src);
+                    window.openImageModal(e.target.src);
                 });
             });
         }
 
-        // Function to handle adding a new task
-        function handleAddTask() {
-            if (newTaskDescription.trim() !== '') {
-                // Generate a unique ID for the new task
-                const newId = tasks.length > 0 ? Math.max(...tasks.map(t => t.id)) + 1 : 1;
-                tasks.push({ id: newId, description: newTaskDescription.trim(), screenshots: [] });
-                newTaskDescription = ''; // Clear input
-                showMessage('Task added successfully!');
-                renderTaskList(); // Re-render the list
-            } else {
-                showMessage('Task description cannot be empty.');
-            }
-        }
-
-        // Function to handle entering a specific task (to view details and upload/redirect)
-        function handleEnterTask(task) {
-            selectedTask = task;
-            selectedFiles = []; // Clear any previously selected files
-            renderTaskDetails();
-        }
-
-        // Function to go back to the main task list view
-        function handleBackToTasks() {
-            selectedTask = null;
-            selectedFiles = [];
-            renderTaskList();
-        }
-
-        // Function to handle file selection for screenshots
-        function handleFileChange(event) {
-            // Filter for only image files
-            selectedFiles = Array.from(event.target.files).filter(file => file.type.startsWith('image/'));
-            
-            const selectedFilesDisplay = document.getElementById('selected-files-display');
-            if (selectedFilesDisplay) {
-                selectedFilesDisplay.textContent = selectedFiles.length > 0 ? `Selected files: ${selectedFiles.map(file => file.name).join(', ')}` : '';
-            }
-            if (selectedFiles.length < event.target.files.length) {
-                showMessage('Only image files are accepted for preview. Non-image files were ignored.', 4000);
-            }
-        }
-
-        // Function to simulate submitting screenshots
-        function handleSubmitScreenshots() {
-            if (selectedFiles.length > 0) {
-                const newScreenshotUrls = [];
-                const fileNames = [];
-
-                selectedFiles.forEach(file => {
-                    const objectURL = URL.createObjectURL(file); // Create a temporary URL for the file
-                    newScreenshotUrls.push(objectURL);
-                    fileNames.push(file.name);
-                });
-
-                console.log(`Submitting screenshots for task "${selectedTask.description}": ${fileNames.join(', ')}`);
-
-                // Update the selected task with the new screenshot URLs
-                selectedTask.screenshots.push(...newScreenshotUrls);
-
-                // Update the global tasks array to reflect changes in selectedTask
-                tasks = tasks.map(task =>
-                    task.id === selectedTask.id
-                        ? { ...task, screenshots: selectedTask.screenshots }
-                        : task
-                );
-
-                showMessage(`Screenshots (${fileNames.join(', ')}) "uploaded" and visible for task: "${selectedTask.description}"!`, 5000);
-                selectedFiles = []; // Clear selected files after "submission"
-                renderTaskDetails(); // Re-render to show updated screenshots list with previews
-            } else {
-                showMessage('Please select at least one image file to "upload".');
-            }
-        }
-
         // Initial render when the page loads
         document.addEventListener('DOMContentLoaded', () => {
-            renderTaskList();
+            // No initial renderTaskList call here. It will be triggered by onAuthStateChanged.
             // Attach event listener to the modal close button
-            modalCloseButton.addEventListener('click', closeImageModal);
+            modalCloseButton.addEventListener('click', window.closeImageModal);
             // Close modal when clicking outside the image
             imageModal.addEventListener('click', (e) => {
                 if (e.target === imageModal) {
-                    closeImageModal();
+                    window.closeImageModal();
                 }
             });
         });
