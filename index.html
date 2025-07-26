@@ -3,442 +3,831 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Task Manager</title>
-    <!-- Tailwind CSS CDN for styling -->
+    <title>AWS Terraform Guide</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts - Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* Custom animation for message display */
-        @keyframes fade-in-down {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        .animate-fade-in-down {
-            animation: fade-in-down 0.5s ease-out forwards;
-        }
-        /* Ensure font-inter is applied */
         body {
             font-family: 'Inter', sans-serif;
+            background-color: #1a202c; /* Darker background */
+            color: #e2e8f0; /* Lighter text for dark background */
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+        .nav-link {
+            @apply px-4 py-2 rounded-lg hover:bg-blue-600 hover:text-white transition-colors duration-200;
+        }
+        .section-title {
+            @apply text-3xl font-bold text-blue-300 mb-6 border-b-2 border-blue-500 pb-2; /* Adjusted for dark theme */
+        }
+        .subsection-title {
+            @apply text-2xl font-semibold text-blue-200 mb-4 mt-8; /* Adjusted for dark theme */
+        }
+        .code-block {
+            background-color: #0d1117; /* Even darker for code blocks */
+            color: #c9d1d9; /* Lighter code text */
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            font-family: 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New', monospace;
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+        }
+        .screenshot-placeholder {
+            @apply w-full h-64 bg-gray-700 flex items-center justify-center text-gray-400 rounded-lg shadow-md mb-6; /* Darker placeholder */
+        }
+        .screenshot-placeholder img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 0.5rem;
+        }
+        /* Adjust section background for darker theme */
+        section {
+            background-color: #2d3748; /* Darker section background */
+            padding: 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 3rem;
         }
     </style>
 </head>
-<body class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 font-inter">
-
-    <!-- Main container with responsive padding and max width -->
-    <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-2xl p-6 md:p-8 lg:p-10">
-        <h1 class="text-4xl font-bold text-center text-indigo-700 mb-8">
-            My Task Manager
-        </h1>
-
-        <!-- User ID display -->
-        <div class="text-center text-sm text-gray-500 mb-4">
-            Your User ID: <span id="user-id-display" class="font-mono text-gray-700">Loading...</span>
+<body class="antialiased">
+    <!-- Navigation Bar -->
+    <nav class="bg-blue-800 text-white p-4 shadow-lg">
+        <div class="container flex flex-col md:flex-row justify-between items-center">
+            <a href="#" class="text-2xl font-bold mb-4 md:mb-0">Terraform AWS Guide</a>
+            <div class="flex flex-wrap justify-center space-x-2 md:space-x-4">
+                <a href="#introduction" class="nav-link">Intro</a>
+                <a href="#s3" class="nav-link">S3</a>
+                <a href="#vpc" class="nav-link">VPC</a>
+                <a href="#ec2" class="nav-link">EC2</a>
+                <a href="#lambda" class="nav-link">Lambda</a>
+                <a href="#ebs" class="nav-link">EBS</a>
+                <a href="#rds" class="nav-link">RDS</a>
+                <a href="#cloudwatch" class="nav-link">CloudWatch</a>
+                <a href="#cloudtrail" class="nav-link">CloudTrail</a>
+                <a href="#athena" class="nav-link">Athena</a>
+                <a href="#cloudformation" class="nav-link">CloudFormation</a>
+                <a href="#cdk" class="nav-link">CDK</a>
+                <a href="#commands" class="nav-link">Commands</a>
+            </div>
         </div>
+    </nav>
 
-        <!-- Message display area -->
-        <div id="message-area" class="hidden bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded-md relative mb-6 text-center shadow-md animate-fade-in-down">
-            <!-- Message will be inserted here by JavaScript -->
+    <!-- Main Content -->
+    <main class="container py-8">
+        <!-- Introduction Section -->
+        <section id="introduction">
+            <h1 class="section-title">Introduction to Terraform and AWS</h1>
+            <p class="text-lg leading-relaxed mb-4">
+                Terraform is an open-source Infrastructure as Code (IaC) tool that allows you to define and provision infrastructure using a declarative configuration language. Instead of manually clicking through the AWS console, you can write code that describes your desired infrastructure, and Terraform will create, manage, and update it for you. This approach brings many benefits, including version control, reusability, and consistency.
+            </p>
+            <p class="text-lg leading-relaxed mb-4">
+                In this guide, we will walk through how to use Terraform to provision common AWS resources: S3 buckets, Virtual Private Clouds (VPCs), and EC2 instances. Terraform can be used to manage a wide array of AWS services, including but not limited to:
+            </p>
+            <ul class="list-disc list-inside text-lg leading-relaxed mb-4 pl-4">
+                <li>Amazon EC2 (Elastic Compute Cloud)</li>
+                <li>Amazon VPC (Virtual Private Cloud)</li>
+                <li>AWS Lambda (Serverless Compute)</li>
+                <li>Amazon S3 (Simple Storage Service)</li>
+                <li>Amazon EBS (Elastic Block Store)</li>
+                <li>Amazon RDS (Relational Database Service)</li>
+                <li>Amazon Athena (Interactive Query Service)</li>
+                <li>Amazon CloudWatch (Monitoring and Observability)</li>
+                <li>AWS CloudTrail (Governance, Compliance, and Auditing)</li>
+                <li>AWS CloudFormation (Another IaC Service)</li>
+                <li>AWS CDK (Cloud Development Kit)</li>
+            </ul>
+            <p class="text-lg leading-relaxed">
+                This guide focuses on the foundational services to get you started, and provides an overview of others.
+            </p>
+        </section>
+
+        <!-- S3 Section -->
+        <section id="s3">
+            <h2 class="section-title">AWS S3 with Terraform</h2>
+            <p class="text-lg leading-relaxed mb-4">
+                Amazon S3 (Simple Storage Service) is an object storage service offering industry-leading scalability, data availability, security, and performance. You can use S3 to store and retrieve any amount of data at any time, from anywhere on the web.
+            </p>
+
+            <h3 class="subsection-title">Terraform Code for S3 Bucket</h3>
+            <p class="text-lg leading-relaxed mb-4">
+                Below is the Terraform configuration to create a public S3 bucket with versioning enabled. Remember to replace `"your-unique-bucket-name"` with a globally unique name.
+            </p>
+            <div class="code-block">
+                <pre><code>
+# main.tf
+provider "aws" {
+  region = "us-east-1" # You can change your desired AWS region here
+}
+
+resource "aws_s3_bucket" "my_terraform_bucket" {
+  bucket = "your-unique-bucket-name-12345" # Must be globally unique
+  acl    = "private" # Recommended to start with private ACL
+
+  tags = {
+    Name        = "MyTerraformS3Bucket"
+    Environment = "Development"
+  }
+}
+
+resource "aws_s3_bucket_versioning" "versioning_example" {
+  bucket = aws_s3_bucket.my_terraform_bucket.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "block_public_access" {
+  bucket = aws_s3_bucket.my_terraform_bucket.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+output "s3_bucket_id" {
+  description = "The ID of the S3 bucket"
+  value       = aws_s3_bucket.my_terraform_bucket.id
+}
+
+output "s3_bucket_arn" {
+  description = "The ARN of the S3 bucket"
+  value       = aws_s3_bucket.my_terraform_bucket.arn
+}
+                </code></pre>
+            </div>
+
+            <p class="text-lg leading-relaxed">
+                After running `terraform apply`, you can verify the creation of your S3 bucket in the AWS S3 console.
+            </p>
+        </section>
+
+        <!-- VPC Section -->
+        <section id="vpc">
+            <h2 class="section-title">AWS VPC with Terraform</h2>
+            <p class="text-lg leading-relaxed mb-4">
+                Amazon VPC (Virtual Private Cloud) lets you provision a logically isolated section of the AWS Cloud where you can launch AWS resources in a virtual network that you define. You have complete control over your virtual networking environment, including selection of your own IP address range, creation of subnets, and configuration of route tables and network gateways.
+            </p>
+
+            <h3 class="subsection-title">Terraform Code for VPC</h3>
+            <p class="text-lg leading-relaxed mb-4">
+                This Terraform configuration sets up a basic VPC with a public subnet, an Internet Gateway, and a route table to allow internet access.
+            </p>
+            <div class="code-block">
+                <pre><code>
+# vpc.tf
+resource "aws_vpc" "main_vpc" {
+  cidr_block = "10.0.0.0/16"
+  tags = {
+    Name = "TerraformVPC"
+  }
+}
+
+resource "aws_internet_gateway" "gw" {
+  vpc_id = aws_vpc.main_vpc.id
+  tags = {
+    Name = "TerraformIGW"
+  }
+}
+
+resource "aws_subnet" "public_subnet" {
+  vpc_id            = aws_vpc.main_vpc.id
+  cidr_block        = "10.0.1.0/24"
+  availability_zone = "us-east-1a" # Change to your desired AZ
+  map_public_ip_on_launch = true # Instances in this subnet get public IPs
+  tags = {
+    Name = "TerraformPublicSubnet"
+  }
+}
+
+resource "aws_route_table" "public_route_table" {
+  vpc_id = aws_vpc.main_vpc.id
+  tags = {
+    Name = "TerraformPublicRT"
+  }
+}
+
+resource "aws_route" "default_internet_route" {
+  route_table_id         = aws_route_table.public_route_table.id
+  destination_cidr_block = "0.0.0.0/0"
+  gateway_id             = aws_internet_gateway.gw.id
+}
+
+resource "aws_route_table_association" "public_subnet_association" {
+  subnet_id      = aws_subnet.public_subnet.id
+  route_table_id = aws_route_table.public_route_table.id
+}
+
+output "vpc_id" {
+  description = "The ID of the VPC"
+  value       = aws_vpc.main_vpc.id
+}
+
+output "public_subnet_id" {
+  description = "The ID of the public subnet"
+  value       = aws_subnet.public_subnet.id
+}
+                </code></pre>
+            </div>
+
+            <p class="text-lg leading-relaxed">
+                After applying the Terraform configuration, you can navigate to the VPC dashboard in the AWS console to see your newly created VPC, subnets, and internet gateway.
+            </p>
+        </section>
+
+        <!-- EC2 Section -->
+        <section id="ec2">
+            <h2 class="section-title">AWS EC2 with Terraform</h2>
+            <p class="text-lg leading-relaxed mb-4">
+                Amazon EC2 (Elastic Compute Cloud) provides scalable computing capacity in the AWS cloud. You can use EC2 to launch virtual servers, known as instances, and configure them with the operating system and software you need.
+            </p>
+
+            <h3 class="subsection-title">Terraform Code for EC2 Instance</h3>
+            <p class="text-lg leading-relaxed mb-4">
+                This Terraform configuration launches a simple EC2 instance (Amazon Linux 2 AMI) in the public subnet created earlier. It also creates a security group to allow SSH access.
+            </p>
+            <div class="code-block">
+                <pre><code>
+# ec2.tf
+# Ensure you have the VPC and public subnet defined in vpc.tf or similar
+
+resource "aws_security_group" "allow_ssh" {
+  name        = "allow_ssh"
+  description = "Allow SSH inbound traffic"
+  vpc_id      = aws_vpc.main_vpc.id # Reference the VPC created earlier
+
+  ingress {
+    description       = "SSH from VPC"
+    from_port        = 22
+    to_port          = 22
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"] # Be cautious with 0.0.0.0/0 in production
+  }
+
+  egress {
+    from_port        = 0
+    to_port          = 0
+    protocol         = "-1"
+    cidr_blocks      = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "AllowSSH"
+  }
+}
+
+resource "aws_instance" "web_server" {
+  ami           = "ami-053b0d53c279acc90" # Amazon Linux 2 AMI (us-east-1) - check for latest for your region
+  instance_type = "t2.micro"
+  subnet_id     = aws_subnet.public_subnet.id # Reference the public subnet
+  vpc_security_group_ids = [aws_security_group.allow_ssh.id]
+  associate_public_ip_address = true # Important for public access
+
+  tags = {
+    Name = "TerraformWebServer"
+  }
+
+  # Optional: User data to install Nginx
+  user_data = &lt;&lt;-EOF
+              #!/bin/bash
+              sudo yum update -y
+              sudo yum install -y nginx
+              sudo systemctl start nginx
+              sudo systemctl enable nginx
+              echo "Hello from Terraform EC2!" | sudo tee /usr/share/nginx/html/index.html
+              EOF
+}
+
+output "ec2_public_ip" {
+  description = "The public IP address of the EC2 instance"
+  value       = aws_instance.web_server.public_ip
+}
+
+output "ec2_public_dns" {
+  description = "The public DNS of the EC2 instance"
+  value       = aws_instance.web_server.public_dns
+}
+                </code></pre>
+            </div>
+
+            <p class="text-lg leading-relaxed">
+                Once `terraform apply` completes, you can see your EC2 instance running in the AWS EC2 console.
+            </p>
+        </section>
+
+        <!-- AWS Lambda Section -->
+        <section id="lambda">
+            <h2 class="section-title">AWS Lambda with Terraform</h2>
+            <p class="text-lg leading-relaxed mb-4">
+                AWS Lambda is a serverless compute service that lets you run code without provisioning or managing servers. You pay only for the compute time you consume. Lambda executes your code only when needed and scales automatically.
+            </p>
+
+            <h3 class="subsection-title">Terraform Code for Lambda Function</h3>
+            <p class="text-lg leading-relaxed mb-4">
+                This Terraform configuration creates a simple Python Lambda function, an IAM role for its execution, and attaches a basic policy allowing it to write logs to CloudWatch.
+            </p>
+            <div class="code-block">
+                <pre><code>
+# lambda.tf
+resource "aws_iam_role" "lambda_exec_role" {
+  name = "lambda_exec_role_terraform"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+      },
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_policy_attachment" {
+  role       = aws_iam_role.lambda_exec_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+resource "aws_lambda_function" "my_lambda_function" {
+  function_name = "my-terraform-lambda"
+  handler       = "main.handler"
+  runtime       = "python3.9"
+  role          = aws_iam_role.lambda_exec_role.arn
+
+  # For a real application, you'd zip your code and upload it to S3
+  # For this example, we'll use inline code (not recommended for production)
+  filename = "lambda_function_payload.zip"
+  source_code_hash = filebase64sha256("lambda_function_payload.zip")
+
+  # Create a dummy zip file for the example
+  # In a real scenario, you'd use a local-exec provisioner or build pipeline
+  provisioner "local-exec" {
+    command = "zip -r lambda_function_payload.zip main.py"
+    working_dir = path.module
+  }
+}
+
+# Dummy Python file for the Lambda function
+# main.py
+# def handler(event, context):
+#     print("Hello from Terraform Lambda!")
+#     return {
+#         'statusCode': 200,
+#         'body': 'Hello from Terraform Lambda!'
+#     }
+
+output "lambda_function_arn" {
+  description = "The ARN of the Lambda function"
+  value       = aws_lambda_function.my_lambda_function.arn
+}
+                </code></pre>
+            </div>
+            <p class="text-lg leading-relaxed mb-4">
+                **Note:** For the Lambda function to work, you would typically have a `main.py` file (or your code) and then zip it into `lambda_function_payload.zip` in the same directory as your Terraform files. The `local-exec` provisioner above is a simplified way to create a dummy zip for demonstration.
+            </p>
+            <p class="text-lg leading-relaxed">
+                After `terraform apply`, you can verify your Lambda function in the AWS Lambda console.
+            </p>
+        </section>
+
+        <!-- Amazon EBS Section -->
+        <section id="ebs">
+            <h2 class="section-title">Amazon EBS with Terraform</h2>
+            <p class="text-lg leading-relaxed mb-4">
+                Amazon Elastic Block Store (EBS) provides persistent block storage volumes for use with Amazon EC2 instances. EBS volumes are highly available and reliable storage volumes that can be attached to any running instance in the same Availability Zone.
+            </p>
+
+            <h3 class="subsection-title">Terraform Code for EBS Volume</h3>
+            <p class="text-lg leading-relaxed mb-4">
+                This Terraform configuration creates an EBS volume and attaches it to the previously defined EC2 instance.
+            </p>
+            <div class="code-block">
+                <pre><code>
+# ebs.tf
+# Requires aws_instance.web_server from ec2.tf to be defined
+
+resource "aws_ebs_volume" "my_ebs_volume" {
+  availability_zone = aws_instance.web_server.availability_zone
+  size              = 10 # GB
+  type              = "gp2" # General Purpose SSD
+
+  tags = {
+    Name = "MyTerraformEBSVolume"
+  }
+}
+
+resource "aws_volume_attachment" "ebs_att" {
+  device_name = "/dev/sdh" # Or /dev/xvdf for newer Linux AMIs
+  volume_id   = aws_ebs_volume.my_ebs_volume.id
+  instance_id = aws_instance.web_server.id # Reference the EC2 instance
+
+  # Ensure the EC2 instance is running before attempting to attach
+  depends_on = [aws_instance.web_server]
+}
+
+output "ebs_volume_id" {
+  description = "The ID of the created EBS volume"
+  value       = aws_ebs_volume.my_ebs_volume.id
+}
+                </code></pre>
+            </div>
+            <p class="text-lg leading-relaxed">
+                You can verify the creation and attachment of your EBS volume in the EC2 dashboard under "Elastic Block Store" -> "Volumes" in the AWS console.
+            </p>
+        </section>
+
+        <!-- Amazon RDS Section -->
+        <section id="rds">
+            <h2 class="section-title">Amazon RDS with Terraform</h2>
+            <p class="text-lg leading-relaxed mb-4">
+                Amazon Relational Database Service (RDS) makes it easy to set up, operate, and scale a relational database in the cloud. It provides cost-efficient and resizable capacity while automating time-consuming administration tasks such as hardware provisioning, database setup, patching, and backups.
+            </p>
+
+            <h3 class="subsection-title">Terraform Code for RDS Instance</h3>
+            <p class="text-lg leading-relaxed mb-4">
+                This Terraform configuration creates a basic MySQL RDS instance within your VPC. A new security group is created to allow access to the database.
+            </p>
+            <div class="code-block">
+                <pre><code>
+# rds.tf
+# Requires aws_vpc.main_vpc and aws_subnet.public_subnet from vpc.tf
+
+resource "aws_db_subnet_group" "main_db_subnet_group" {
+  name       = "main-db-subnet-group"
+  subnet_ids = [aws_subnet.public_subnet.id] # Use your public/private subnets
+  description = "A group of subnets for RDS"
+
+  tags = {
+    Name = "MainDBSubnetGroup"
+  }
+}
+
+resource "aws_security_group" "rds_security_group" {
+  name        = "rds_security_group"
+  description = "Allow inbound traffic to RDS"
+  vpc_id      = aws_vpc.main_vpc.id
+
+  ingress {
+    description = "Allow MySQL from anywhere (for demo)"
+    from_port   = 3306 # MySQL default port
+    to_port     = 3306
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] # Be cautious in production; restrict to known IPs
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "RDS-SG"
+  }
+}
+
+resource "aws_db_instance" "my_rds_instance" {
+  allocated_storage    = 20
+  engine               = "mysql"
+  engine_version       = "8.0"
+  instance_class       = "db.t3.micro"
+  identifier           = "my-terraform-db"
+  username             = "admin"
+  password             = "password123" # Change this for production!
+  db_subnet_group_name = aws_db_subnet_group.main_db_subnet_group.name
+  vpc_security_group_ids = [aws_security_group.rds_security_group.id]
+  skip_final_snapshot  = true # Set to false for production
+  publicly_accessible  = true # Set to false for production (use bastion host)
+
+  tags = {
+    Name = "MyTerraformRDS"
+  }
+}
+
+output "rds_endpoint" {
+  description = "The endpoint of the RDS instance"
+  value       = aws_db_instance.my_rds_instance.address
+}
+
+output "rds_port" {
+  description = "The port of the RDS instance"
+  value       = aws_db_instance.my_rds_instance.port
+}
+                </code></pre>
+            </div>
+            <p class="text-lg leading-relaxed">
+                After running `terraform apply`, you can find your new RDS instance in the AWS RDS console, along with its endpoint and status.
+            </p>
+        </section>
+
+        <!-- Amazon CloudWatch Section -->
+        <section id="cloudwatch">
+            <h2 class="section-title">Amazon CloudWatch with Terraform</h2>
+            <p class="text-lg leading-relaxed mb-4">
+                Amazon CloudWatch monitors your Amazon Web Services (AWS) resources and the applications you run on AWS in real time. You can use CloudWatch to collect and track metrics, collect and monitor log files, and set alarms.
+            </p>
+
+            <h3 class="subsection-title">Terraform Code for CloudWatch Alarm</h3>
+            <p class="text-lg leading-relaxed mb-4">
+                This Terraform configuration creates a CloudWatch alarm that triggers if the CPU utilization of our EC2 instance (`aws_instance.web_server`) goes above 80% for 5 minutes.
+            </p>
+            <div class="code-block">
+                <pre><code>
+# cloudwatch.tf
+# Requires aws_instance.web_server from ec2.tf
+
+resource "aws_cloudwatch_metric_alarm" "cpu_utilization_alarm" {
+  alarm_name          = "ec2-cpu-utilization-high"
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = 1
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/EC2"
+  period              = 300 # 5 minutes
+  statistic           = "Average"
+  threshold           = 80
+  alarm_description   = "This alarm monitors EC2 CPU utilization"
+  actions_enabled     = true
+
+  dimensions = {
+    InstanceId = aws_instance.web_server.id
+  }
+
+  # You can add alarm actions here, e.g., SNS topic for notifications
+  # alarm_actions = [aws_sns_topic.alarm_topic.arn]
+
+  tags = {
+    Name = "EC2CPUAlarm"
+  }
+}
+
+output "cloudwatch_alarm_name" {
+  description = "The name of the CloudWatch alarm"
+  value       = aws_cloudwatch_metric_alarm.cpu_utilization_alarm.alarm_name
+}
+                </code></pre>
+            </div>
+            <p class="text-lg leading-relaxed">
+                You can view and manage your CloudWatch alarms in the AWS CloudWatch console under "Alarms".
+            </p>
+        </section>
+
+        <!-- AWS CloudTrail Section -->
+        <section id="cloudtrail">
+            <h2 class="section-title">AWS CloudTrail with Terraform</h2>
+            <p class="text-lg leading-relaxed mb-4">
+                AWS CloudTrail is a service that enables governance, compliance, operational auditing, and risk auditing of your AWS account. With CloudTrail, you can log, continuously monitor, and retain account activity related to actions across your AWS infrastructure.
+            </p>
+
+            <h3 class="subsection-title">Terraform Code for CloudTrail</h3>
+            <p class="text-lg leading-relaxed mb-4">
+                This Terraform configuration creates a CloudTrail trail that logs all API activity in your AWS account and stores the logs in an S3 bucket.
+            </p>
+            <div class="code-block">
+                <pre><code>
+# cloudtrail.tf
+# Requires an S3 bucket for logs, e.g., aws_s3_bucket.my_terraform_bucket from main.tf
+
+resource "aws_s3_bucket" "cloudtrail_logs_bucket" {
+  bucket = "your-cloudtrail-logs-unique-bucket-name-12345" # Must be globally unique
+  acl    = "private"
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Sid       = "AWSCloudTrailAclCheck",
+        Effect    = "Allow",
+        Principal = {
+          Service = "cloudtrail.amazonaws.com"
+        },
+        Action    = "s3:GetBucketAcl",
+        Resource  = "arn:aws:s3:::your-cloudtrail-logs-unique-bucket-name-12345"
+      },
+      {
+        Sid       = "AWSCloudTrailWrite",
+        Effect    = "Allow",
+        Principal = {
+          Service = "cloudtrail.amazonaws.com"
+        },
+        Action    = "s3:PutObject",
+        Resource  = "arn:aws:s3:::your-cloudtrail-logs-unique-bucket-name-12345/AWSLogs/${data.aws_caller_identity.current.account_id}/*",
+        Condition = {
+          StringEquals = {
+            "s3:x-amz-acl" = "bucket-owner-full-control"
+          }
+        }
+      }
+    ]
+  })
+
+  tags = {
+    Name = "CloudTrailLogsBucket"
+  }
+}
+
+data "aws_caller_identity" "current" {} # To get current account ID for S3 policy
+
+resource "aws_cloudtrail" "my_cloudtrail" {
+  name                          = "my-terraform-cloudtrail"
+  s3_bucket_name                = aws_s3_bucket.cloudtrail_logs_bucket.id
+  include_global_service_events = true
+  is_multi_region_trail         = true
+  enable_logging                = true
+
+  tags = {
+    Name = "MyCloudTrail"
+  }
+}
+
+output "cloudtrail_arn" {
+  description = "The ARN of the CloudTrail trail"
+  value       = aws_cloudtrail.my_cloudtrail.arn
+}
+                </code></pre>
+            </div>
+            <p class="text-lg leading-relaxed">
+                You can monitor and manage your CloudTrail configuration in the AWS CloudTrail console.
+            </p>
+        </section>
+
+        <!-- Amazon Athena Section -->
+        <section id="athena">
+            <h2 class="section-title">Amazon Athena with Terraform</h2>
+            <p class="text-lg leading-relaxed mb-4">
+                Amazon Athena is an interactive query service that makes it easy to analyze data directly in Amazon S3 using standard SQL. Athena is serverless, so there is no infrastructure to set up or manage, and you pay only for the queries you run.
+            </p>
+
+            <h3 class="subsection-title">Terraform Code for Athena Workgroup</h3>
+            <p class="text-lg leading-relaxed mb-4">
+                This Terraform configuration creates a basic Athena Workgroup and an S3 bucket for query results.
+            </p>
+            <div class="code-block">
+                <pre><code>
+# athena.tf
+resource "aws_s3_bucket" "athena_query_results_bucket" {
+  bucket = "your-athena-query-results-unique-bucket-name-12345" # Must be globally unique
+  acl    = "private"
+
+  tags = {
+    Name = "AthenaQueryResults"
+  }
+}
+
+resource "aws_athena_workgroup" "my_athena_workgroup" {
+  name          = "my-terraform-workgroup"
+  description   = "Workgroup managed by Terraform"
+  state         = "ENABLED"
+
+  configuration {
+    enforce_workgroup_configuration     = true
+    publish_cloudwatch_metrics_enabled  = true
+    requester_pays_enabled              = false
+
+    result_configuration {
+      output_location = "s3://${aws_s3_bucket.athena_query_results_bucket.id}/"
+    }
+  }
+
+  tags = {
+    Name = "MyAthenaWorkgroup"
+  }
+}
+
+output "athena_workgroup_name" {
+  description = "The name of the Athena Workgroup"
+  value       = aws_athena_workgroup.my_athena_workgroup.name
+}
+                </code></pre>
+            </div>
+            <p class="text-lg leading-relaxed">
+                You can find your Athena Workgroup and run queries from the AWS Athena console.
+            </p>
+        </section>
+
+        <!-- AWS CloudFormation Section -->
+        <section id="cloudformation">
+            <h2 class="section-title">AWS CloudFormation</h2>
+            <p class="text-lg leading-relaxed mb-4">
+                AWS CloudFormation is Amazon's own Infrastructure as Code (IaC) service. It allows you to model your entire AWS infrastructure (compute, storage, database, networking, analytics, machine learning, etc.) in text files. CloudFormation templates are typically written in JSON or YAML.
+            </p>
+            <p class="text-lg leading-relaxed mb-4">
+                While both Terraform and CloudFormation are IaC tools, they have different philosophies:
+            </p>
+            <ul class="list-disc list-inside text-lg leading-relaxed mb-4 pl-4">
+                <li>
+                    **Scope:** CloudFormation is AWS-specific, meaning it can only manage AWS resources. Terraform is cloud-agnostic and can manage resources across multiple cloud providers (AWS, Azure, GCP, etc.) and on-premise infrastructure.
+                </li>
+                <li>
+                    **State Management:** CloudFormation manages state internally within AWS. Terraform maintains its own state file, which maps real-world resources to your configuration.
+                </li>
+                <li>
+                    **Language:** CloudFormation uses JSON/YAML. Terraform uses HashiCorp Configuration Language (HCL), which is designed to be more human-readable and expressive.
+                </li>
+                <li>
+                    **Rollback:** CloudFormation has built-in rollback capabilities for failed deployments. Terraform requires manual intervention or custom scripting for complex rollbacks.
+                </li>
+            </ul>
+            <p class="text-lg leading-relaxed">
+                Many organizations use both tools, leveraging CloudFormation for AWS-native solutions and Terraform for multi-cloud or hybrid-cloud environments.
+            </p>
+            <p class="text-lg leading-relaxed">
+                You can view your CloudFormation stacks and their deployment status in the AWS CloudFormation console.
+            </p>
+        </section>
+
+        <!-- AWS CDK Section -->
+        <section id="cdk">
+            <h2 class="section-title">AWS CDK</h2>
+            <p class="text-lg leading-relaxed mb-4">
+                The AWS Cloud Development Kit (CDK) is an open-source software development framework to define your cloud application resources using familiar programming languages. It allows you to define your infrastructure in languages like TypeScript, Python, Java, C#, and Go, and then synthesize it into CloudFormation templates.
+            </p>
+            <p class="text-lg leading-relaxed mb-4">
+                CDK offers a higher level of abstraction compared to writing raw CloudFormation or even Terraform HCL. It's particularly appealing to developers who prefer to define their infrastructure using code constructs rather than declarative configuration files.
+            </p>
+            <ul class="list-disc list-inside text-lg leading-relaxed mb-4 pl-4">
+                <li>
+                    **Abstraction:** CDK provides constructs that encapsulate cloud best practices and common patterns, allowing for more concise and reusable infrastructure definitions.
+                </li>
+                <li>
+                    **Language Choice:** Developers can use their preferred programming language, leveraging IDE features, testing frameworks, and package managers.
+                </li>
+                <li>
+                    **CloudFormation Underneath:** While you write code in CDK, it ultimately generates CloudFormation templates, which are then deployed to AWS.
+                </li>
+            </ul>
+            <p class="text-lg leading-relaxed">
+                Terraform and CDK serve similar goals (IaC) but approach them differently. Terraform uses a custom DSL (HCL) and manages its own state, while CDK uses general-purpose programming languages and synthesizes to CloudFormation. The choice often depends on team's existing skill sets and architectural preferences.
+            </p>
+            <p class="text-lg leading-relaxed">
+                While CDK itself doesn't have a console view, its deployments are managed via CloudFormation, which you can monitor in the CloudFormation console.
+            </p>
+        </section>
+
+        <!-- Terraform Commands Section -->
+        <section id="commands">
+            <h2 class="section-title">Essential Terraform Commands</h2>
+            <p class="text-lg leading-relaxed mb-4">
+                Here are the fundamental Terraform commands you'll use to manage your infrastructure:
+            </p>
+
+            <h3 class="subsection-title"><code>terraform init</code></h3>
+            <p class="text-lg leading-relaxed mb-2">
+                This command initializes a working directory containing Terraform configuration files. It downloads necessary providers and modules. You should run this command when you first start working on a new Terraform project or when you add new providers/modules.
+            </p>
+            <div class="code-block">
+                <pre><code>terraform init</code></pre>
+            </div>
+
+            <h3 class="subsection-title"><code>terraform plan</code></h3>
+            <p class="text-lg leading-relaxed mb-2">
+                The `terraform plan` command creates an execution plan. It shows you what Terraform will do (create, modify, or destroy resources) without actually making any changes to your infrastructure. This is crucial for reviewing changes before applying them.
+            </p>
+            <div class="code-block">
+                <pre><code>terraform plan</code></pre>
+            </div>
+
+            <h3 class="subsection-title"><code>terraform apply</code></h3>
+            <p class="text-lg leading-relaxed mb-2">
+                The `terraform apply` command executes the actions proposed in a Terraform plan. It provisions or updates your infrastructure according to the configuration. You'll be prompted to confirm the changes before they are applied.
+            </p>
+            <div class="code-block">
+                <pre><code>terraform apply</code></pre>
+            </div>
+
+            <h3 class="subsection-title"><code>terraform destroy</code></h3>
+            <p class="text-lg leading-relaxed mb-2">
+                The `terraform destroy` command is used to destroy the Terraform-managed infrastructure. It's useful for cleaning up resources after testing or when a project is no longer needed. Use with extreme caution in production environments!
+            </p>
+            <div class="code-block">
+                <pre><code>terraform destroy</code></pre>
+            </div>
+        </section>
+
+        <!-- Conclusion -->
+        <section>
+            <h2 class="section-title">Conclusion</h2>
+            <p class="text-lg leading-relaxed">
+                You've now seen how to define and manage various AWS resources using Terraform. This is just the beginning of what you can achieve with Infrastructure as Code. By leveraging Terraform, you can automate your infrastructure provisioning, leading to more efficient, reliable, and scalable cloud environments. Happy Terraforming!
+            </p>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white p-6 text-center mt-12">
+        <div class="container">
+            <p>&copy; 2025 Terraform AWS Guide. All rights reserved.</p>
         </div>
-
-        <!-- Loading indicator -->
-        <div id="loading-indicator" class="text-center text-indigo-600 font-semibold mb-4 hidden">
-            Loading tasks...
-        </div>
-
-        <!-- Content area for task list or task details -->
-        <div id="app-content">
-            <!-- Content will be dynamically loaded here by JavaScript -->
-        </div>
-    </div>
-
-    <!-- Firebase SDKs -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, updateDoc, onSnapshot, collection, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Global Firebase variables
-        let app;
-        let db;
-        let auth;
-        let userId = 'anonymous'; // Default until authenticated
-        let isAuthReady = false; // Flag to ensure Firestore operations wait for auth
-
-        // Global state variables (now managed with Firestore)
-        // Initial tasks array populated with the provided AWS services.
-        // These tasks will be added to Firestore if the database is empty.
-        // If tasks already exist in Firestore, they will be loaded from there instead.
-        window.tasks = [
-            { id: 'ec2', description: 'Amazon EC2', screenshots: [], createdAt: Date.now() + 1 },
-            { id: 'vpc', description: 'Amazon VPC', screenshots: ['https://drive.google.com/file/d/1ET2d4f9WnYUc5B6n85JValeJjG-_TyoJ/view?usp=sharing', 'https://drive.google.com/file/d/1ng1oX9BFqJ4m3JAeLpW9Me9yTlGPQa6H/view?usp=sharing'], createdAt: Date.now() + 2 }, // Both links added here
-            { id: 'lambda', description: 'AWS Lambda', screenshots: [], createdAt: Date.now() + 3 },
-            { id: 's3', description: 'Amazon S3', screenshots: [], createdAt: Date.now() + 4 },
-            { id: 'ebs', description: 'Amazon EBS', screenshots: [], createdAt: Date.now() + 5 },
-            { id: 'rds', description: 'Amazon RDS', screenshots: [], createdAt: Date.now() + 6 },
-            { id: 'athena', description: 'Amazon Athena', screenshots: [], createdAt: Date.now() + 7 },
-            { id: 'cloudwatch', description: 'Amazon CloudWatch', screenshots: [], createdAt: Date.now() + 8 },
-            { id: 'cloudtrail', description: 'AWS CloudTrail', screenshots: [], createdAt: Date.now() + 9 },
-            { id: 'cloudformation', description: 'AWS CloudFormation', screenshots: [], createdAt: Date.now() + 10 },
-            { id: 'cdk', description: 'AWS CDK', screenshots: [], createdAt: Date.now() + 11 }
-        ];
-        window.newTaskDescription = '';
-        window.selectedTask = null;
-        window.newScreenshotName = ''; // New state variable for the screenshot input
-        window.message = '';
-
-        // DOM elements
-        const messageArea = document.getElementById('message-area');
-        const appContent = document.getElementById('app-content');
-        const userIdDisplay = document.getElementById('user-id-display');
-        const loadingIndicator = document.getElementById('loading-indicator');
-
-        // Function to display messages to the user
-        function showMessage(msg, duration = 3000) {
-            window.message = msg;
-            messageArea.textContent = window.message;
-            messageArea.classList.remove('hidden');
-            messageArea.classList.add('animate-fade-in-down');
-            setTimeout(() => {
-                messageArea.classList.add('hidden');
-                messageArea.classList.remove('animate-fade-in-down');
-                window.message = '';
-            }, duration);
-        }
-
-        // Function to render the main task list view
-        function renderTaskList() {
-            appContent.innerHTML = `
-                <div class="space-y-8">
-                    <!-- Add New Task Section -->
-                    <div class="bg-gray-50 p-6 rounded-xl shadow-lg border border-gray-200">
-                        <h2 class="text-2xl font-semibold text-gray-800 mb-4">Add a New Task</h2>
-                        <div class="flex flex-col md:flex-row gap-4">
-                            <textarea
-                                id="new-task-description"
-                                placeholder="Describe your task here..."
-                                rows="3"
-                                class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-y"
-                                aria-label="New task description"
-                            >${window.newTaskDescription}</textarea>
-                            <button
-                                id="add-task-button"
-                                class="px-6 py-3 bg-indigo-600 text-white font-semibold rounded-full shadow-lg
-                                     hover:bg-indigo-700 transition duration-300 ease-in-out transform hover:scale-105
-                                     focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75
-                                     md:self-end"
-                            >
-                                Add Task
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Task List Section -->
-                    <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
-                        <h2 class="text-2xl font-semibold text-gray-800 mb-4">Your Tasks</h2>
-                        <ul id="tasks-list" class="space-y-4">
-                            ${window.tasks.length === 0 ? `
-                                <p class="text-gray-600 text-center py-4">No tasks added yet. Start by adding a new task above!</p>
-                            ` : window.tasks.map(task => `
-                                <li
-                                    class="flex flex-col md:flex-row items-start md:items-center justify-between
-                                         bg-white p-4 rounded-lg shadow-md border border-gray-100
-                                         hover:shadow-lg transition duration-200 ease-in-out"
-                                >
-                                    <span class="text-lg text-gray-800 flex-grow mb-2 md:mb-0 md:mr-4">
-                                        ${task.description}
-                                    </span>
-                                    <button
-                                        data-task-id="${task.id}"
-                                        class="enter-task-button px-5 py-2 bg-blue-500 text-white font-medium rounded-full shadow-md
-                                               hover:bg-blue-600 transition duration-300 ease-in-out transform hover:scale-105
-                                               focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75"
-                                    >
-                                        Enter Task
-                                    </button>
-                                </li>
-                            `).join('')}
-                        </ul>
-                    </div>
-                </div>
-            `;
-
-            // Add event listeners after rendering
-            document.getElementById('add-task-button').addEventListener('click', handleAddTask);
-            document.getElementById('new-task-description').addEventListener('input', (e) => {
-                window.newTaskDescription = e.target.value;
-            });
-            document.querySelectorAll('.enter-task-button').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    const taskId = e.target.dataset.taskId; // Task ID is now a string from Firestore
-                    const task = window.tasks.find(t => t.id === taskId);
-                    handleEnterTask(task);
-                });
-            });
-        }
-
-        // Function to render the task details view
-        function renderTaskDetails() {
-            if (!window.selectedTask) return; // Should not happen if called correctly
-
-            appContent.innerHTML = `
-                <div class="space-y-6">
-                    <h2 class="text-3xl font-semibold text-gray-800 mb-4">
-                        Task Details:
-                    </h2>
-                    <div class="bg-gray-50 p-6 rounded-lg shadow-inner border border-gray-200">
-                        <p class="text-lg text-gray-700">
-                            <span class="font-medium text-gray-900">Description:</span> ${window.selectedTask.description}
-                        </p>
-                    </div>
-
-                    <!-- Section to add screenshot names/links -->
-                    <div class="mt-8 bg-white p-6 rounded-xl shadow-lg border border-gray-200">
-                        <h3 class="text-2xl font-semibold text-gray-800 mb-4">Add Screenshot Name/Link</h3>
-                        <div class="flex flex-col md:flex-row gap-4">
-                            <input
-                                type="text"
-                                id="new-screenshot-input"
-                                placeholder="Enter screenshot name or URL (e.g., 'my-screenshot.png' or 'https://link.to/image.jpg')"
-                                value="${window.newScreenshotName}"
-                                class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                                aria-label="New screenshot name or URL"
-                            />
-                            <button
-                                id="add-screenshot-name-button"
-                                class="w-full md:w-auto px-6 py-3 bg-purple-600 text-white font-semibold rounded-full shadow-lg
-                                     hover:bg-purple-700 transition duration-300 ease-in-out transform hover:scale-105
-                                     focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-75"
-                            >
-                                Add Screenshot
-                            </button>
-                        </div>
-                    </div>
-
-                    ${window.selectedTask.screenshots && window.selectedTask.screenshots.length > 0 ? `
-                        <div class="mt-6 bg-gray-50 p-6 rounded-xl shadow-lg border border-gray-200">
-                            <h3 class="text-2xl font-semibold text-gray-800 mb-3">Attached Screenshots:</h3>
-                            <ul class="list-disc list-inside text-gray-700">
-                                ${window.selectedTask.screenshots.map((screenshot, index) => `
-                                    <li key="${index}" class="py-1">
-                                        ${screenshot.startsWith('http://') || screenshot.startsWith('https://') ?
-                                            `<a href="${screenshot}" target="_blank" class="text-blue-600 hover:underline">${screenshot}</a>` :
-                                            screenshot
-                                        }
-                                    </li>
-                                `).join('')}
-                            </ul>
-                        </div>
-                    ` : `
-                        <div class="mt-6 bg-gray-50 p-6 rounded-xl shadow-lg border border-gray-200 text-gray-600 text-center">
-                            <p>No screenshots attached yet for this task.</p>
-                        </div>
-                    `}
-
-                    <button
-                        id="back-to-tasks-button"
-                        class="mt-8 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-full shadow-lg
-                             hover:bg-indigo-700 transition duration-300 ease-in-out transform hover:scale-105
-                             focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75"
-                    >
-                        ← Back to All Tasks
-                    </button>
-                </div>
-            `;
-
-            // Add event listeners after rendering
-            document.getElementById('new-screenshot-input').addEventListener('input', (e) => {
-                window.newScreenshotName = e.target.value;
-            });
-            document.getElementById('add-screenshot-name-button').addEventListener('click', handleAddScreenshotName);
-            document.getElementById('back-to-tasks-button').addEventListener('click', handleBackToTasks);
-        }
-
-        // Function to handle adding a new task
-        async function handleAddTask() {
-            if (!isAuthReady) {
-                showMessage('Authentication not ready. Please wait.', 3000);
-                return;
-            }
-            if (window.newTaskDescription.trim() !== '') {
-                try {
-                    const newTaskRef = doc(collection(db, `artifacts/${__app_id}/public/data/tasks`));
-                    const taskId = newTaskRef.id;
-
-                    await setDoc(newTaskRef, {
-                        id: taskId,
-                        description: window.newTaskDescription.trim(),
-                        screenshots: [],
-                        createdAt: Date.now()
-                    });
-
-                    window.newTaskDescription = '';
-                    showMessage('Task added successfully!');
-                } catch (error) {
-                    console.error("Error adding task: ", error);
-                    showMessage('Error adding task. Please try again.', 3000);
-                }
-            } else {
-                showMessage('Task description cannot be empty.');
-            }
-        }
-
-        // Function to handle entering a specific task
-        function handleEnterTask(task) {
-            window.selectedTask = task;
-            window.newScreenshotName = ''; // Clear input when entering a new task
-            renderTaskDetails();
-        }
-
-        // Function to go back to the main task list view
-        function handleBackToTasks() {
-            window.selectedTask = null;
-            window.newScreenshotName = ''; // Clear input when going back to list
-            renderTaskList();
-        }
-
-        // Function to handle adding a screenshot name/link to the current task
-        async function handleAddScreenshotName() {
-            if (!isAuthReady) {
-                showMessage('Authentication not ready. Please wait.', 3000);
-                return;
-            }
-            if (window.newScreenshotName.trim() !== '') {
-                try {
-                    const screenshotToAdd = window.newScreenshotName.trim();
-                    const currentTaskInState = window.tasks.find(t => t.id === window.selectedTask.id);
-                    const updatedScreenshots = [...(currentTaskInState?.screenshots || []), screenshotToAdd];
-
-                    const taskRef = doc(db, `artifacts/${__app_id}/public/data/tasks`, window.selectedTask.id);
-                    await updateDoc(taskRef, {
-                        screenshots: updatedScreenshots
-                    });
-
-                    showMessage(`Screenshot "${screenshotToAdd}" attached successfully!`, 5000);
-                    window.newScreenshotName = ''; // Clear the input field
-                    // The onSnapshot listener will re-render renderTaskDetails with updated data
-                } catch (error) {
-                    console.error("Error attaching screenshot: ", error);
-                    showMessage('Error attaching screenshot. Please try again.', 3000);
-                }
-            } else {
-                showMessage('Screenshot name or URL cannot be empty.');
-            }
-        }
-
-        // Firebase Initialization and Authentication
-        window.onload = async function() {
-            try {
-                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-                const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-
-                if (Object.keys(firebaseConfig).length === 0) {
-                    console.error("Firebase config is missing or empty.");
-                    showMessage("Firebase configuration error. Cannot connect to database.", 5000);
-                    return;
-                }
-
-                app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-
-                if (typeof __initial_auth_token !== 'undefined') {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-
-                onAuthStateChanged(auth, (user) => {
-                    if (user) {
-                        userId = user.uid;
-                        userIdDisplay.textContent = userId;
-                        isAuthReady = true;
-                        console.log("Firebase authenticated. User ID:", userId);
-                        listenForTasks();
-                    } else {
-                        userId = 'anonymous';
-                        userIdDisplay.textContent = 'Not authenticated';
-                        isAuthReady = false;
-                        console.log("Firebase not authenticated.");
-                        window.tasks = [];
-                        renderTaskList();
-                    }
-                });
-
-            } catch (error) {
-                console.error("Error initializing Firebase:", error);
-                showMessage("Failed to initialize app. Check console for details.", 5000);
-            }
-        };
-
-        // Listen for real-time updates to tasks from Firestore
-        function listenForTasks() {
-            if (!db || !isAuthReady) {
-                console.warn("Firestore or Auth not ready for listening to tasks.");
-                return;
-            }
-
-            loadingIndicator.classList.remove('hidden');
-
-            const tasksCollectionRef = collection(db, `artifacts/${__app_id}/public/data/tasks`);
-            const q = query(tasksCollectionRef);
-
-            onSnapshot(q, (snapshot) => {
-                const fetchedTasks = [];
-                snapshot.forEach((doc) => {
-                    fetchedTasks.push({ id: doc.id, ...doc.data() });
-                });
-
-                // Check if Firestore is empty and populate with initial tasks if needed
-                // This logic ensures that if the database is fresh, it gets the predefined tasks.
-                // It also handles the case where the user might clear the database.
-                if (fetchedTasks.length === 0 && window.tasks.length > 0) {
-                    console.log("Firestore is empty, populating with initial tasks...");
-                    window.tasks.forEach(async (task) => {
-                        try {
-                            const taskRef = doc(db, `artifacts/${__app_id}/public/data/tasks`, task.id);
-                            await setDoc(taskRef, task);
-                        } catch (e) {
-                            console.error("Error adding initial task to Firestore: ", e);
-                        }
-                    });
-                } else {
-                    // Sort tasks by createdAt (if available) for consistent order
-                    fetchedTasks.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
-                    window.tasks = fetchedTasks;
-                }
-
-                console.log("Tasks updated from Firestore:", window.tasks);
-
-                // Re-render the appropriate view based on current state
-                if (window.selectedTask) {
-                    const updatedSelectedTask = window.tasks.find(t => t.id === window.selectedTask.id);
-                    if (updatedSelectedTask) {
-                        window.selectedTask = updatedSelectedTask;
-                        renderTaskDetails();
-                    } else {
-                        handleBackToTasks();
-                    }
-                } else {
-                    renderTaskList();
-                }
-                loadingIndicator.classList.add('hidden');
-            }, (error) => {
-                console.error("Error listening to tasks:", error);
-                showMessage("Error loading tasks. Please check your connection.", 5000);
-                loadingIndicator.classList.add('hidden');
-            });
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            renderTaskList();
-        });
-    </script>
+    </footer>
 </body>
 </html>
